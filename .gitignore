@@ -1,0 +1,37 @@
+# Nix
+result
+result-*
+.direnv/
+
+# Flutter/Dart
+.dart_tool/
+.packages
+build/
+*.iml
+.metadata
+pubspec.lock
+
+# IDE
+.idea/
+*.swp
+*.swo
+.vscode/
+
+# macOS
+.DS_Store
+*.xcworkspace
+*.xcuserdata
+
+# Android
+*.apk
+*.aab
+*.jks
+local.properties
+.gradle/
+
+# iOS
+*.ipa
+Pods/
+
+# Test
+coverage/
