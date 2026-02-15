@@ -2,7 +2,11 @@
   "permissions": {
     "allow": [
       "WebSearch",
-      "Bash(nix flake update:*)"
+      "Bash(nix flake update:*)",
+      "Bash(flutter pub get:*)",
+      "Bash(flutter analyze:*)",
+      "WebFetch(domain:pub.dev)",
+      "Bash(flutter doctor:*)"
     ]
   }
 }
