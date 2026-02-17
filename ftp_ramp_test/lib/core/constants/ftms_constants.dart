@@ -2,14 +2,14 @@
 class FtmsConstants {
   FtmsConstants._();
 
-  /// FTMS Service UUID
-  static const String ftmsServiceUuid = '00001826-0000-1000-8000-00805f9b34fb';
+  /// FTMS Service UUID (short 16-bit)
+  static const String ftmsServiceShortUuid = '1826';
 
-  /// Indoor Bike Data Characteristic UUID - for reading power, cadence, speed
-  static const String indoorBikeDataUuid = '00002AD2-0000-1000-8000-00805f9b34fb';
+  /// Indoor Bike Data Characteristic UUID (short 16-bit)
+  static const String indoorBikeDataShortUuid = '2ad2';
 
-  /// Fitness Machine Control Point Characteristic UUID - for setting target power
-  static const String controlPointUuid = '00002AD9-0000-1000-8000-00805f9b34fb';
+  /// Fitness Machine Control Point Characteristic UUID (short 16-bit)
+  static const String controlPointShortUuid = '2ad9';
 
   /// Op code for setting target power in ERG mode
   static const int setTargetPowerOpCode = 0x05;

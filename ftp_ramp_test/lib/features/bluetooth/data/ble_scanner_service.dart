@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
@@ -47,11 +48,24 @@ class BleScannerService {
         final device = scanResult.device;
         if (device.platformName.isEmpty) continue;
         final id = device.remoteId.str;
+        final ad = scanResult.advertisementData;
+
+        developer.log(
+          'Device: ${device.platformName} ($id)\n'
+          '  serviceUuids: ${ad.serviceUuids.map((u) => u.str).toList()}\n'
+          '  serviceData: ${ad.serviceData.map((k, v) => MapEntry(k.str, v))}\n'
+          '  manufacturerData: ${ad.manufacturerData}\n'
+          '  localName: ${ad.advName}\n'
+          '  connectable: ${ad.connectable}\n'
+          '  rssi: ${scanResult.rssi}',
+          name: 'BleScannerService',
+        );
+
         _discoveredDevices[id] = device;
         devices[id] = ScannedDevice(
           id: id,
           name: device.platformName,
-          serviceUuids: scanResult.advertisementData.serviceUuids
+          serviceUuids: ad.serviceUuids
               .map((u) => u.str.toLowerCase())
               .toList(),
         );

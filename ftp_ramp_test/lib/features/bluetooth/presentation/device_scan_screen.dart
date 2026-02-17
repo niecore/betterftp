@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/constants/ble_constants.dart';
+import '../../../core/constants/ftms_constants.dart';
 import '../data/ble_scanner_service.dart';
 import '../data/hr_repository.dart';
 import '../data/trainer_repository.dart';
@@ -79,43 +81,6 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen> {
     });
   }
 
-  void _showDeviceTypeSheet(ScannedDevice device) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                device.name,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.directions_bike),
-              title: const Text('Connect as Trainer'),
-              onTap: () {
-                Navigator.pop(context);
-                _connectAsTrainer(device);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.favorite),
-              title: const Text('Connect as HR Monitor'),
-              onTap: () {
-                Navigator.pop(context);
-                _connectAsHrMonitor(device);
-              },
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-  }
-
   Future<void> _connectAsTrainer(ScannedDevice device) async {
     setState(() {
       _connectingToId = device.id;
@@ -154,6 +119,66 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen> {
         SnackBar(content: Text('Failed to connect to ${device.name}')),
       );
     }
+  }
+
+  bool _isTrainer(ScannedDevice device) {
+    return device.serviceUuids.contains(FtmsConstants.ftmsServiceShortUuid);
+  }
+
+  bool _isHrMonitor(ScannedDevice device) {
+    return device.serviceUuids.contains(BleConstants.heartRateServiceShortUuid);
+  }
+
+  Widget _buildDeviceSections() {
+    final trainers = _devices.where(_isTrainer).toList();
+    final hrMonitors =
+        _devices.where((d) => _isHrMonitor(d) && !_isTrainer(d)).toList();
+    final other =
+        _devices.where((d) => !_isTrainer(d) && !_isHrMonitor(d)).toList();
+
+    return ListView(
+      children: [
+        if (trainers.isNotEmpty) ...[
+          _SectionHeader(
+            icon: Icons.directions_bike,
+            label: 'Indoor Trainers',
+          ),
+          for (final device in trainers)
+            _DeviceTile(
+              device: device,
+              icon: Icons.directions_bike,
+              isConnecting: _connectingToId == device.id,
+              onTap: () => _connectAsTrainer(device),
+            ),
+        ],
+        if (hrMonitors.isNotEmpty) ...[
+          _SectionHeader(
+            icon: Icons.favorite,
+            label: 'HR Monitors',
+          ),
+          for (final device in hrMonitors)
+            _DeviceTile(
+              device: device,
+              icon: Icons.favorite,
+              isConnecting: _connectingToId == device.id,
+              onTap: () => _connectAsHrMonitor(device),
+            ),
+        ],
+        if (other.isNotEmpty) ...[
+          _SectionHeader(
+            icon: Icons.bluetooth,
+            label: 'Other Devices',
+          ),
+          for (final device in other)
+            _DeviceTile(
+              device: device,
+              icon: Icons.bluetooth,
+              isConnecting: _connectingToId == device.id,
+              onTap: () => _connectAsTrainer(device),
+            ),
+        ],
+      ],
+    );
   }
 
   @override
@@ -249,7 +274,7 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen> {
             ),
           ),
 
-          // Device list
+          // Device list split by type
           Expanded(
             child: _devices.isEmpty
                 ? Center(
@@ -260,30 +285,7 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen> {
                       style: Theme.of(context).textTheme.bodyLarge,
                     ),
                   )
-                : ListView.builder(
-                    itemCount: _devices.length,
-                    itemBuilder: (context, index) {
-                      final device = _devices[index];
-                      final isConnecting = _connectingToId == device.id;
-
-                      return ListTile(
-                        leading: const Icon(Icons.bluetooth),
-                        title: Text(device.name),
-                        subtitle: Text(device.id),
-                        trailing: isConnecting
-                            ? const SizedBox(
-                                width: 24,
-                                height: 24,
-                                child:
-                                    CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Icon(Icons.chevron_right),
-                        onTap: isConnecting
-                            ? null
-                            : () => _showDeviceTypeSheet(device),
-                      );
-                    },
-                  ),
+                : _buildDeviceSections(),
           ),
         ],
       ),
@@ -449,6 +451,64 @@ class _DataDisplay extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const _SectionHeader({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DeviceTile extends StatelessWidget {
+  final ScannedDevice device;
+  final IconData icon;
+  final bool isConnecting;
+  final VoidCallback onTap;
+
+  const _DeviceTile({
+    required this.device,
+    required this.icon,
+    required this.isConnecting,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Icon(icon),
+      title: Text(device.name),
+      subtitle: Text(device.id),
+      trailing: isConnecting
+          ? const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Icon(Icons.chevron_right),
+      onTap: isConnecting ? null : onTap,
     );
   }
 }

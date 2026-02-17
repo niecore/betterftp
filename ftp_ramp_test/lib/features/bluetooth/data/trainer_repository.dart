@@ -67,23 +67,47 @@ class TrainerRepository {
 
       final services = await device.discoverServices();
 
+      developer.log(
+        'Discovered ${services.length} services:',
+        name: 'TrainerRepository',
+      );
+      for (final service in services) {
+        developer.log(
+          '  Service: ${service.uuid.str}',
+          name: 'TrainerRepository',
+        );
+        for (final char in service.characteristics) {
+          developer.log(
+            '    Char: ${char.uuid.str} (props: ${char.properties})',
+            name: 'TrainerRepository',
+          );
+        }
+      }
+
       // Find the FTMS service and cache characteristics
       _bikeDataChar = null;
       _controlPointChar = null;
       for (final service in services) {
-        if (service.uuid.str.toLowerCase() ==
-            FtmsConstants.ftmsServiceUuid.toLowerCase()) {
+        if (_uuidMatches(
+            service.uuid.str, FtmsConstants.ftmsServiceShortUuid)) {
           for (final char in service.characteristics) {
-            final uuid = char.uuid.str.toLowerCase();
-            if (uuid == FtmsConstants.indoorBikeDataUuid.toLowerCase()) {
+            if (_uuidMatches(
+                char.uuid.str, FtmsConstants.indoorBikeDataShortUuid)) {
               _bikeDataChar = char;
-            } else if (uuid == FtmsConstants.controlPointUuid.toLowerCase()) {
+            } else if (_uuidMatches(
+                char.uuid.str, FtmsConstants.controlPointShortUuid)) {
               _controlPointChar = char;
             }
           }
           break;
         }
       }
+
+      developer.log(
+        'FTMS lookup result: bikeDataChar=${_bikeDataChar != null}, '
+        'controlPointChar=${_controlPointChar != null}',
+        name: 'TrainerRepository',
+      );
 
       if (_bikeDataChar == null) {
         developer.log('FTMS Indoor Bike Data characteristic not found',
@@ -102,8 +126,9 @@ class TrainerRepository {
 
       _updateConnectionState(TrainerConnectionState.connected);
       return true;
-    } catch (e) {
-      developer.log('Connection error: $e', name: 'TrainerRepository');
+    } catch (e, stackTrace) {
+      developer.log('Connection error: $e\n$stackTrace',
+          name: 'TrainerRepository');
       _updateConnectionState(TrainerConnectionState.disconnected);
       return false;
     }
@@ -247,6 +272,13 @@ class TrainerRepository {
   void _updateConnectionState(TrainerConnectionState state) {
     _currentState = state;
     _connectionStateController.add(state);
+  }
+
+  /// Match a UUID string against a short 16-bit UUID, handling both
+  /// short ("2ad2") and full 128-bit ("00002ad2-0000-1000-...") formats.
+  static bool _uuidMatches(String uuid, String shortUuid) {
+    final lower = uuid.toLowerCase();
+    return lower == shortUuid || lower.startsWith('0000$shortUuid-');
   }
 
   /// Clean up resources

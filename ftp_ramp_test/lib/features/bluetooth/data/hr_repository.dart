@@ -64,11 +64,11 @@ class HrRepository {
       // Find the Heart Rate service
       BluetoothCharacteristic? hrMeasurementChar;
       for (final service in services) {
-        if (service.uuid.str.toLowerCase() ==
-            BleConstants.heartRateServiceUuid.toLowerCase()) {
+        if (_uuidMatches(
+            service.uuid.str, BleConstants.heartRateServiceShortUuid)) {
           for (final char in service.characteristics) {
-            if (char.uuid.str.toLowerCase() ==
-                BleConstants.heartRateMeasurementUuid.toLowerCase()) {
+            if (_uuidMatches(
+                char.uuid.str, BleConstants.heartRateMeasurementShortUuid)) {
               hrMeasurementChar = char;
             }
           }
@@ -93,8 +93,9 @@ class HrRepository {
 
       _updateConnectionState(HrConnectionState.connected);
       return true;
-    } catch (e) {
-      developer.log('HR connection error: $e', name: 'HrRepository');
+    } catch (e, stackTrace) {
+      developer.log('HR connection error: $e\n$stackTrace',
+          name: 'HrRepository');
       _updateConnectionState(HrConnectionState.disconnected);
       return false;
     }
@@ -157,6 +158,13 @@ class HrRepository {
   void _updateConnectionState(HrConnectionState state) {
     _currentState = state;
     _connectionStateController.add(state);
+  }
+
+  /// Match a UUID string against a short 16-bit UUID, handling both
+  /// short ("2a37") and full 128-bit ("00002a37-0000-1000-...") formats.
+  static bool _uuidMatches(String uuid, String shortUuid) {
+    final lower = uuid.toLowerCase();
+    return lower == shortUuid || lower.startsWith('0000$shortUuid-');
   }
 
   /// Clean up resources
