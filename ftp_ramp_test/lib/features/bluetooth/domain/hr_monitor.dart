@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 
-enum TrainerConnectionState {
+enum HrConnectionState {
   disconnected,
   connecting,
   connected,
@@ -8,23 +8,23 @@ enum TrainerConnectionState {
 }
 
 @immutable
-class Trainer {
+class HrMonitor {
   final String id;
   final String name;
-  final TrainerConnectionState connectionState;
+  final HrConnectionState connectionState;
 
-  const Trainer({
+  const HrMonitor({
     required this.id,
     required this.name,
-    this.connectionState = TrainerConnectionState.disconnected,
+    this.connectionState = HrConnectionState.disconnected,
   });
 
-  Trainer copyWith({
+  HrMonitor copyWith({
     String? id,
     String? name,
-    TrainerConnectionState? connectionState,
+    HrConnectionState? connectionState,
   }) {
-    return Trainer(
+    return HrMonitor(
       id: id ?? this.id,
       name: name ?? this.name,
       connectionState: connectionState ?? this.connectionState,
@@ -34,7 +34,7 @@ class Trainer {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is Trainer &&
+      other is HrMonitor &&
           runtimeType == other.runtimeType &&
           id == other.id &&
           name == other.name &&
@@ -44,30 +44,25 @@ class Trainer {
   int get hashCode => id.hashCode ^ name.hashCode ^ connectionState.hashCode;
 
   @override
-  String toString() => 'Trainer(id: $id, name: $name, state: $connectionState)';
+  String toString() =>
+      'HrMonitor(id: $id, name: $name, state: $connectionState)';
 }
 
 @immutable
-class TrainerData {
-  final int power; // Watts
-  final int cadence; // RPM
-  final int? heartRate; // BPM (from HR monitor, nullable)
+class HrData {
+  final int heartRate; // BPM
   final DateTime timestamp;
 
-  const TrainerData({
-    required this.power,
-    required this.cadence,
-    this.heartRate,
+  const HrData({
+    required this.heartRate,
     required this.timestamp,
   });
 
-  factory TrainerData.zero() => TrainerData(
-        power: 0,
-        cadence: 0,
+  factory HrData.zero() => HrData(
+        heartRate: 0,
         timestamp: DateTime.now(),
       );
 
   @override
-  String toString() =>
-      'TrainerData(power: ${power}W, cadence: ${cadence}rpm, hr: ${heartRate ?? '-'}bpm)';
+  String toString() => 'HrData(heartRate: ${heartRate}bpm)';
 }

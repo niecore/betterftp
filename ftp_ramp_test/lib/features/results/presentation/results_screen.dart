@@ -75,6 +75,13 @@ class ResultsScreen extends StatelessWidget {
                       label: 'Total Duration',
                       value: _formatTime(testState.elapsedSeconds),
                     ),
+                    if (testState.maxHeartRate != null) ...[
+                      const Divider(),
+                      _SummaryRow(
+                        label: 'Max Heart Rate',
+                        value: '${testState.maxHeartRate} bpm',
+                      ),
+                    ],
                   ],
                 ),
               ),

@@ -6,8 +6,13 @@ enum RampTestPhase { idle, warmup, ramping, completed, failed }
 class PowerReading {
   final DateTime timestamp;
   final int power;
+  final int? heartRate;
 
-  const PowerReading({required this.timestamp, required this.power});
+  const PowerReading({
+    required this.timestamp,
+    required this.power,
+    this.heartRate,
+  });
 }
 
 @immutable
@@ -22,6 +27,8 @@ class RampTestState {
   final int? calculatedFtp;
   final int currentPower; // Latest power reading
   final int currentCadence; // Latest cadence reading
+  final int? currentHeartRate; // Latest HR reading (null if no HR monitor)
+  final int? maxHeartRate; // Max HR during test (null if no HR monitor)
 
   const RampTestState({
     this.phase = RampTestPhase.idle,
@@ -34,6 +41,8 @@ class RampTestState {
     this.calculatedFtp,
     this.currentPower = 0,
     this.currentCadence = 0,
+    this.currentHeartRate,
+    this.maxHeartRate,
   });
 
   RampTestState copyWith({
@@ -47,6 +56,8 @@ class RampTestState {
     int? calculatedFtp,
     int? currentPower,
     int? currentCadence,
+    int? currentHeartRate,
+    int? maxHeartRate,
   }) {
     return RampTestState(
       phase: phase ?? this.phase,
@@ -59,6 +70,8 @@ class RampTestState {
       calculatedFtp: calculatedFtp ?? this.calculatedFtp,
       currentPower: currentPower ?? this.currentPower,
       currentCadence: currentCadence ?? this.currentCadence,
+      currentHeartRate: currentHeartRate ?? this.currentHeartRate,
+      maxHeartRate: maxHeartRate ?? this.maxHeartRate,
     );
   }
 }

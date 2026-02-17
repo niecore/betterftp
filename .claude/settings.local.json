@@ -6,7 +6,10 @@
       "Bash(flutter pub get:*)",
       "Bash(flutter analyze:*)",
       "WebFetch(domain:pub.dev)",
-      "Bash(flutter doctor:*)"
+      "Bash(flutter doctor:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(chmod:*)"
     ]
   }
 }

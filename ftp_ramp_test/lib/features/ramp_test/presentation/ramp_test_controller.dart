@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../bluetooth/data/hr_repository.dart';
 import '../../bluetooth/data/trainer_repository.dart';
 import '../domain/ftp_calculator.dart';
 import '../domain/ramp_test_config.dart';
@@ -9,12 +10,16 @@ import '../domain/ramp_test_state.dart';
 
 class RampTestController extends StateNotifier<RampTestState> {
   final TrainerRepository _trainerRepository;
+  final HrRepository _hrRepository;
   final RampTestConfig _config;
 
   Timer? _timer;
   StreamSubscription? _dataSubscription;
+  StreamSubscription? _hrSubscription;
+  int? _latestHr;
 
-  RampTestController(this._trainerRepository, [this._config = const RampTestConfig()])
+  RampTestController(this._trainerRepository, this._hrRepository,
+      [this._config = const RampTestConfig()])
       : super(const RampTestState());
 
   void start() {
@@ -34,6 +39,11 @@ class RampTestController extends StateNotifier<RampTestState> {
 
     _trainerRepository.setTargetPower(_config.warmupPower);
 
+    // Listen to HR data if connected
+    _hrSubscription = _hrRepository.hrDataStream.listen((hrData) {
+      _latestHr = hrData.heartRate;
+    });
+
     // Listen to trainer data
     _dataSubscription = _trainerRepository.trainerDataStream.listen((data) {
       if (state.phase == RampTestPhase.idle ||
@@ -45,16 +55,26 @@ class RampTestController extends StateNotifier<RampTestState> {
       final reading = PowerReading(
         timestamp: data.timestamp,
         power: data.power,
+        heartRate: _latestHr,
       );
 
       final readings = [...state.powerReadings, reading];
       final bestAvg = FtpCalculator.bestOneMinuteAverage(readings);
+
+      final currentHr = _latestHr;
+      final maxHr = currentHr != null
+          ? (state.maxHeartRate != null
+              ? (currentHr > state.maxHeartRate! ? currentHr : state.maxHeartRate!)
+              : currentHr)
+          : state.maxHeartRate;
 
       state = state.copyWith(
         currentPower: data.power,
         currentCadence: data.cadence,
         powerReadings: readings,
         bestOneMinAvgPower: bestAvg,
+        currentHeartRate: currentHr,
+        maxHeartRate: maxHr,
       );
     });
 
@@ -116,6 +136,8 @@ class RampTestController extends StateNotifier<RampTestState> {
     _timer = null;
     _dataSubscription?.cancel();
     _dataSubscription = null;
+    _hrSubscription?.cancel();
+    _hrSubscription = null;
 
     final ftp = FtpCalculator.calculateFtp(state.powerReadings);
 
@@ -129,12 +151,14 @@ class RampTestController extends StateNotifier<RampTestState> {
   void dispose() {
     _timer?.cancel();
     _dataSubscription?.cancel();
+    _hrSubscription?.cancel();
     super.dispose();
   }
 }
 
 final rampTestControllerProvider =
     StateNotifierProvider<RampTestController, RampTestState>((ref) {
-  final repository = ref.watch(trainerRepositoryProvider);
-  return RampTestController(repository);
+  final trainerRepo = ref.watch(trainerRepositoryProvider);
+  final hrRepo = ref.watch(hrRepositoryProvider);
+  return RampTestController(trainerRepo, hrRepo);
 });

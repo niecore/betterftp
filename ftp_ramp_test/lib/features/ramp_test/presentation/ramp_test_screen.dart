@@ -113,6 +113,12 @@ class _RampTestScreenState extends ConsumerState<RampTestScreen> {
                         value: '${state.currentCadence}',
                         unit: 'rpm',
                       ),
+                      if (state.currentHeartRate != null)
+                        _MetricTile(
+                          label: 'HR',
+                          value: '${state.currentHeartRate}',
+                          unit: 'bpm',
+                        ),
                       if (state.phase == RampTestPhase.ramping)
                         _MetricTile(
                           label: 'Stage',

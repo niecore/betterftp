@@ -1,15 +1,24 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 
-import 'package:flutter_ftms/flutter_ftms.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/constants/ftms_constants.dart';
 import '../domain/trainer.dart';
+import 'ble_scanner_service.dart';
 
 /// Repository for managing FTMS trainer connections
 class TrainerRepository {
+  final BleScannerService _scannerService;
+
   BluetoothDevice? _connectedDevice;
-  StreamSubscription? _scanSubscription;
+  StreamSubscription? _bikeDataSubscription;
+  StreamSubscription? _disconnectSubscription;
+
+  /// Cached FTMS characteristics after service discovery
+  BluetoothCharacteristic? _bikeDataChar;
+  BluetoothCharacteristic? _controlPointChar;
 
   final _trainerDataController = StreamController<TrainerData>.broadcast();
   final _connectionStateController =
@@ -22,70 +31,71 @@ class TrainerRepository {
   TrainerConnectionState _currentState = TrainerConnectionState.disconnected;
   TrainerConnectionState get currentState => _currentState;
 
-  /// Scan for FTMS-compatible devices
-  Stream<List<Trainer>> scanForDevices() {
-    final devices = <String, Trainer>{};
-    final controller = StreamController<List<Trainer>>();
-
-    // Start scanning
-    FTMS.scanForBluetoothDevices();
-
-    // Listen to scan results
-    _scanSubscription = FTMS.scanResults.listen((scanResults) {
-      for (final scanResult in scanResults) {
-        final device = scanResult.device;
-        final trainer = Trainer(
-          id: device.remoteId.str,
-          name: device.platformName.isNotEmpty
-              ? device.platformName
-              : 'Unknown Device',
-        );
-        devices[trainer.id] = trainer;
-      }
-      controller.add(devices.values.toList());
-    });
-
-    controller.onCancel = () {
-      _scanSubscription?.cancel();
-      _scanSubscription = null;
-    };
-
-    return controller.stream;
-  }
-
-  /// Stop scanning for devices
-  void stopScan() {
-    _scanSubscription?.cancel();
-    _scanSubscription = null;
-  }
-
-  /// Check if Bluetooth is available and on
-  Future<bool> isBluetoothAvailable() async {
-    return await FTMS.isBluetoothEnabled();
-  }
+  TrainerRepository(this._scannerService);
 
   /// Connect to a trainer device
   Future<bool> connect(Trainer trainer) async {
     try {
       _updateConnectionState(TrainerConnectionState.connecting);
 
-      // Find the device from scan results
-      final device = await _findDevice(trainer.id);
+      _scannerService.stopScan();
+
+      final device = _scannerService.getDevice(trainer.id);
       if (device == null) {
+        developer.log('Device not found in cache: ${trainer.id}',
+            name: 'TrainerRepository');
         _updateConnectionState(TrainerConnectionState.disconnected);
         return false;
       }
 
       _connectedDevice = device;
 
-      // Connect to the FTMS device
-      await FTMS.connectToFTMSDevice(device);
+      await device.connect(timeout: const Duration(seconds: 15));
 
-      // Subscribe to device data
-      await FTMS.useDeviceDataCharacteristic(
-        device,
-        (data) => _handleDeviceData(data),
-      );
+      // Listen for unexpected disconnects
+      _disconnectSubscription = device.connectionState.listen((state) {
+        if (state == BluetoothConnectionState.disconnected &&
+            _currentState == TrainerConnectionState.connected) {
+          developer.log('Unexpected disconnect', name: 'TrainerRepository');
+          _cleanup();
+          _updateConnectionState(TrainerConnectionState.disconnected);
+        }
+      });
+
+      final services = await device.discoverServices();
+
+      // Find the FTMS service and cache characteristics
+      _bikeDataChar = null;
+      _controlPointChar = null;
+      for (final service in services) {
+        if (service.uuid.str.toLowerCase() ==
+            FtmsConstants.ftmsServiceUuid.toLowerCase()) {
+          for (final char in service.characteristics) {
+            final uuid = char.uuid.str.toLowerCase();
+            if (uuid == FtmsConstants.indoorBikeDataUuid.toLowerCase()) {
+              _bikeDataChar = char;
+            } else if (uuid == FtmsConstants.controlPointUuid.toLowerCase()) {
+              _controlPointChar = char;
+            }
+          }
+          break;
+        }
+      }
+
+      if (_bikeDataChar == null) {
+        developer.log('FTMS Indoor Bike Data characteristic not found',
+            name: 'TrainerRepository');
+        await device.disconnect();
+        _updateConnectionState(TrainerConnectionState.disconnected);
+        return false;
+      }
+
+      // Subscribe to Indoor Bike Data notifications
+      await _bikeDataChar!.setNotifyValue(true);
+      _bikeDataSubscription = _bikeDataChar!.onValueReceived.listen((data) {
+        final trainerData = _parseIndoorBikeData(data);
+        _trainerDataController.add(trainerData);
+      });
 
       _updateConnectionState(TrainerConnectionState.connected);
       return true;
@@ -96,57 +106,79 @@ class TrainerRepository {
     }
   }
 
-  /// Find a device by ID from a fresh scan
-  Future<BluetoothDevice?> _findDevice(String deviceId) async {
-    final completer = Completer<BluetoothDevice?>();
+  /// Parse raw Indoor Bike Data characteristic bytes into TrainerData.
+  ///
+  /// The Indoor Bike Data characteristic (0x2AD2) layout:
+  /// - Bytes 0-1: Flags (16-bit, little-endian)
+  /// - Remaining bytes: optional fields based on flag bits
+  ///
+  /// Flag bits (per FTMS spec, note bit 0 is inverted):
+  /// - Bit 0: 0 = Instantaneous Speed present (2 bytes, uint16, 0.01 km/h)
+  /// - Bit 1: Average Speed present (2 bytes)
+  /// - Bit 2: Instantaneous Cadence present (2 bytes, uint16, 0.5 rpm)
+  /// - Bit 3: Average Cadence present (2 bytes)
+  /// - Bit 4: Total Distance present (3 bytes)
+  /// - Bit 5: Resistance Level present (2 bytes)
+  /// - Bit 6: Instantaneous Power present (2 bytes, sint16, watts)
+  /// - Bit 7: Average Power present (2 bytes)
+  TrainerData _parseIndoorBikeData(List<int> data) {
+    if (data.length < 2) return TrainerData.zero();
 
-    // Start scanning
-    await FTMS.scanForBluetoothDevices();
+    final flags = data[0] | (data[1] << 8);
+    int offset = 2;
 
-    StreamSubscription? subscription;
-    Timer? timeout;
+    int power = 0;
+    int cadence = 0;
 
-    subscription = FTMS.scanResults.listen((scanResults) {
-      for (final scanResult in scanResults) {
-        if (scanResult.device.remoteId.str == deviceId) {
-          timeout?.cancel();
-          subscription?.cancel();
-          if (!completer.isCompleted) {
-            completer.complete(scanResult.device);
-          }
-          return;
-        }
+    // Bit 0 inverted: if bit 0 is 0, speed is present (2 bytes)
+    if ((flags & 0x01) == 0) {
+      offset += 2;
+    }
+
+    // Bit 1: Average Speed (2 bytes)
+    if ((flags & 0x02) != 0) {
+      offset += 2;
+    }
+
+    // Bit 2: Instantaneous Cadence (2 bytes, 0.5 rpm resolution)
+    if ((flags & 0x04) != 0) {
+      if (offset + 2 <= data.length) {
+        final rawCadence = data[offset] | (data[offset + 1] << 8);
+        cadence = rawCadence ~/ 2;
       }
-    });
+      offset += 2;
+    }
 
-    // Timeout after 10 seconds
-    timeout = Timer(const Duration(seconds: 10), () {
-      subscription?.cancel();
-      if (!completer.isCompleted) {
-        completer.complete(null);
+    // Bit 3: Average Cadence (2 bytes)
+    if ((flags & 0x08) != 0) {
+      offset += 2;
+    }
+
+    // Bit 4: Total Distance (3 bytes)
+    if ((flags & 0x10) != 0) {
+      offset += 3;
+    }
+
+    // Bit 5: Resistance Level (2 bytes)
+    if ((flags & 0x20) != 0) {
+      offset += 2;
+    }
+
+    // Bit 6: Instantaneous Power (2 bytes, sint16)
+    if ((flags & 0x40) != 0) {
+      if (offset + 2 <= data.length) {
+        power = data[offset] | (data[offset + 1] << 8);
+        // Handle signed 16-bit
+        if (power >= 0x8000) power -= 0x10000;
       }
-    });
+      offset += 2;
+    }
 
-    return completer.future;
-  }
-
-  /// Handle incoming data from the trainer
-  void _handleDeviceData(DeviceData data) {
-    // Extract power, cadence, and speed from device data parameters
-    final powerParam =
-        data.getParameterValueByName(DeviceDataParameterName.instPower);
-    final cadenceParam =
-        data.getParameterValueByName(DeviceDataParameterName.instCadence);
-    final speedParam =
-        data.getParameterValueByName(DeviceDataParameterName.instSpeed);
-
-    final trainerData = TrainerData(
-      power: powerParam?.value.toInt() ?? 0,
-      cadence: cadenceParam?.value.toInt() ?? 0,
-      speed: speedParam?.value.toDouble() ?? 0.0,
+    return TrainerData(
+      power: power,
+      cadence: cadence,
       timestamp: DateTime.now(),
     );
-    _trainerDataController.add(trainerData);
   }
 
   /// Set target power (ERG mode)
@@ -156,20 +188,28 @@ class TrainerRepository {
       return false;
     }
 
-    try {
-      // Request control first, then set target power
-      await FTMS.writeMachineControlPointCharacteristic(
-        _connectedDevice!,
-        MachineControlPoint.requestControl(),
-      );
+    if (_controlPointChar == null) {
+      developer.log('Control Point characteristic not found',
+          name: 'TrainerRepository');
+      return false;
+    }
 
-      await FTMS.writeMachineControlPointCharacteristic(
-        _connectedDevice!,
-        MachineControlPoint.setTargetPower(power: watts),
+    try {
+      // Request control first
+      await _controlPointChar!
+          .write([FtmsConstants.requestControlOpCode], withoutResponse: false);
+
+      // Set target power: opcode + 2 bytes little-endian watts
+      final lowByte = watts & 0xFF;
+      final highByte = (watts >> 8) & 0xFF;
+      await _controlPointChar!.write(
+        [FtmsConstants.setTargetPowerOpCode, lowByte, highByte],
+        withoutResponse: false,
       );
       return true;
     } catch (e) {
-      developer.log('Error setting target power: $e', name: 'TrainerRepository');
+      developer.log('Error setting target power: $e',
+          name: 'TrainerRepository');
       return false;
     }
   }
@@ -178,9 +218,11 @@ class TrainerRepository {
   Future<void> disconnect() async {
     _updateConnectionState(TrainerConnectionState.disconnecting);
 
+    _cleanup();
+
     if (_connectedDevice != null) {
       try {
-        await FTMS.disconnectFromFTMSDevice(_connectedDevice!);
+        await _connectedDevice!.disconnect();
       } catch (e) {
         developer.log('Disconnect error: $e', name: 'TrainerRepository');
       }
@@ -190,6 +232,15 @@ class TrainerRepository {
     _updateConnectionState(TrainerConnectionState.disconnected);
   }
 
+  void _cleanup() {
+    _bikeDataSubscription?.cancel();
+    _bikeDataSubscription = null;
+    _disconnectSubscription?.cancel();
+    _disconnectSubscription = null;
+    _bikeDataChar = null;
+    _controlPointChar = null;
+  }
+
   void _updateConnectionState(TrainerConnectionState state) {
     _currentState = state;
     _connectionStateController.add(state);
@@ -197,7 +248,7 @@ class TrainerRepository {
 
   /// Clean up resources
   void dispose() {
-    _scanSubscription?.cancel();
+    _cleanup();
     _trainerDataController.close();
     _connectionStateController.close();
   }
@@ -205,7 +256,8 @@ class TrainerRepository {
 
 /// Provider for the trainer repository
 final trainerRepositoryProvider = Provider<TrainerRepository>((ref) {
-  final repository = TrainerRepository();
+  final scannerService = ref.watch(bleScannerServiceProvider);
+  final repository = TrainerRepository(scannerService);
   ref.onDispose(() => repository.dispose());
   return repository;
 });
