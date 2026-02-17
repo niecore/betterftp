@@ -143,7 +143,7 @@ class _RampTestScreenState extends ConsumerState<RampTestScreen> {
                             ? 'Warmup Left'
                             : 'Stage Time',
                         value: state.phase == RampTestPhase.warmup
-                            ? _formatTime(300 - state.stageElapsedSeconds)
+                            ? _formatTime((300 - state.stageElapsedSeconds).toInt())
                             : _formatTime(state.stageElapsedSeconds),
                         unit: '',
                       ),

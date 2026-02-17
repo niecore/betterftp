@@ -8,9 +8,7 @@ import '../domain/ftp_calculator.dart';
 import '../domain/ramp_test_config.dart';
 import '../domain/ramp_test_state.dart';
 
-class RampTestController extends StateNotifier<RampTestState> {
-  final TrainerRepository _trainerRepository;
-  final HrRepository _hrRepository;
+class RampTestController extends Notifier<RampTestState> {
   final RampTestConfig _config;
 
   Timer? _timer;
@@ -18,9 +16,14 @@ class RampTestController extends StateNotifier<RampTestState> {
   StreamSubscription? _hrSubscription;
   int? _latestHr;
 
-  RampTestController(this._trainerRepository, this._hrRepository,
-      [this._config = const RampTestConfig()])
-      : super(const RampTestState());
+  RampTestController([this._config = const RampTestConfig()]);
+
+  TrainerRepository get _trainerRepository =>
+      ref.read(trainerRepositoryProvider);
+  HrRepository get _hrRepository => ref.read(hrRepositoryProvider);
+
+  @override
+  RampTestState build() => const RampTestState();
 
   void start() {
     if (state.phase != RampTestPhase.idle) return;
@@ -64,7 +67,9 @@ class RampTestController extends StateNotifier<RampTestState> {
       final currentHr = _latestHr;
       final maxHr = currentHr != null
           ? (state.maxHeartRate != null
-              ? (currentHr > state.maxHeartRate! ? currentHr : state.maxHeartRate!)
+              ? (currentHr > state.maxHeartRate!
+                  ? currentHr
+                  : state.maxHeartRate!)
               : currentHr)
           : state.maxHeartRate;
 
@@ -114,7 +119,8 @@ class RampTestController extends StateNotifier<RampTestState> {
       if (newStageElapsed >= _config.stageDuration) {
         // Next stage
         final newStage = state.currentStage + 1;
-        final targetPower = _config.startPower + (newStage * _config.increment);
+        final targetPower =
+            _config.startPower + (newStage * _config.increment);
         _trainerRepository.setTargetPower(targetPower);
         state = state.copyWith(
           elapsedSeconds: newElapsed,
@@ -146,19 +152,9 @@ class RampTestController extends StateNotifier<RampTestState> {
       calculatedFtp: ftp,
     );
   }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    _dataSubscription?.cancel();
-    _hrSubscription?.cancel();
-    super.dispose();
-  }
 }
 
 final rampTestControllerProvider =
-    StateNotifierProvider<RampTestController, RampTestState>((ref) {
-  final trainerRepo = ref.watch(trainerRepositoryProvider);
-  final hrRepo = ref.watch(hrRepositoryProvider);
-  return RampTestController(trainerRepo, hrRepo);
-});
+    NotifierProvider<RampTestController, RampTestState>(
+  RampTestController.new,
+);

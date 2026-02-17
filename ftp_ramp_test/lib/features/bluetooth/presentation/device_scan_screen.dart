@@ -174,9 +174,9 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen> {
           connectionState.when(
             data: (state) => _ConnectionStatusCard(
               state: state,
-              trainerData: trainerData.valueOrNull,
-              hrState: hrConnectionState.valueOrNull,
-              hrData: hrData.valueOrNull,
+              trainerData: trainerData.value,
+              hrState: hrConnectionState.value,
+              hrData: hrData.value,
               onDisconnect: () {
                 ref.read(trainerRepositoryProvider).disconnect();
               },

@@ -50,7 +50,10 @@ class TrainerRepository {
 
       _connectedDevice = device;
 
-      await device.connect(timeout: const Duration(seconds: 15));
+      await device.connect(
+        license: License.free,
+        timeout: const Duration(seconds: 15),
+      );
 
       // Listen for unexpected disconnects
       _disconnectSubscription = device.connectionState.listen((state) {
