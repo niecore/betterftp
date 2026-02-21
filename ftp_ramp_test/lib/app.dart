@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'core/router/app_router.dart';
+import 'core/theme/app_theme.dart';
 
 class FtpRampTestApp extends StatelessWidget {
   const FtpRampTestApp({super.key});
@@ -8,11 +9,8 @@ class FtpRampTestApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'FTP Ramp Test',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        useMaterial3: true,
-      ),
+      title: 'FTP.TEST',
+      theme: buildAppTheme(),
       routerConfig: appRouter,
     );
   }

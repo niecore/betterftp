@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ftptests.icu — Click Dummy</title>
+<style>
+  @font-face { font-family: 'Iosevka'; font-style: normal; font-display: swap; font-weight: 400;
+    src: url(https://cdn.jsdelivr.net/fontsource/fonts/iosevka@latest/latin-400-normal.woff2) format('woff2'); }
+  @font-face { font-family: 'Iosevka'; font-style: normal; font-display: swap; font-weight: 500;
+    src: url(https://cdn.jsdelivr.net/fontsource/fonts/iosevka@latest/latin-500-normal.woff2) format('woff2'); }
+  @font-face { font-family: 'Iosevka'; font-style: normal; font-display: swap; font-weight: 700;
+    src: url(https://cdn.jsdelivr.net/fontsource/fonts/iosevka@latest/latin-700-normal.woff2) format('woff2'); }
+  @font-face { font-family: 'Iosevka'; font-style: normal; font-display: swap; font-weight: 900;
+    src: url(https://cdn.jsdelivr.net/fontsource/fonts/iosevka@latest/latin-900-normal.woff2) format('woff2'); }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --teal: #0D9488;
+    --teal-dark: #0F766E;
+    --teal-bg: rgba(13,148,136,0.06);
+    --pink: #EC4899;
+    --pink-dark: #DB2777;
+    --pink-bg: rgba(236,72,153,0.06);
+    --yellow: #FACC15;
+    --yellow-deep: #EAB308;
+    --yellow-bg: rgba(234,179,8,0.08);
+    --dark: #1a1a1a;
+    --bg: #F5F5F0;
+    --card: #fff;
+    --muted: #aaa;
+    --border-light: #f0f0f0;
+    --font: 'Iosevka', monospace;
+  }
+
+  body {
+    background: #E8E4DF;
+    display: flex; justify-content: center; align-items: center;
+    min-height: 100vh; font-family: var(--font);
+  }
+
+  .phone-frame {
+    width: 375px; height: 720px; border-radius: 44px; overflow: hidden;
+    position: relative; background: var(--bg);
+    box-shadow: 0 25px 80px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.05);
+  }
+
+  .screen {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.35s ease, transform 0.35s ease;
+    transform: translateX(30px); overflow-y: auto;
+  }
+  .screen.active { opacity: 1; pointer-events: all; transform: translateX(0); }
+
+  /* BLOCK */
+  .block {
+    border: 3px solid var(--dark); border-radius: 14px;
+    margin-bottom: 10px; overflow: hidden; cursor: pointer;
+    transition: transform 0.12s, border-color 0.2s;
+  }
+  .block:hover { transform: translateY(-2px); border-color: var(--yellow-deep); }
+  .block-head {
+    padding: 10px 16px; font-size: 9px; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase; color: #fff;
+    transition: background 0.2s;
+  }
+  .block-head.teal { background: var(--teal); }
+  .block-head.pink { background: var(--pink); }
+  .block-head.dark { background: var(--dark); }
+  .block:hover .block-head.teal { background: var(--yellow-deep); color: var(--dark); }
+  .block:hover .block-head.pink { background: var(--yellow-deep); color: var(--dark); }
+  .block-body { padding: 16px; background: var(--card); }
+
+  .tag { font-size: 9px; font-weight: 700; padding: 4px 10px; border-radius: 4px; border: 2px solid; letter-spacing: 1px; }
+  .tag.on { border-color: var(--teal); color: var(--teal); background: var(--teal-bg); }
+  .tag.off { border-color: #ddd; color: #ccc; }
+
+  .icon-box {
+    width: 36px; height: 36px; border: 2.5px solid var(--dark); border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0;
+  }
+
+  /* BUTTONS — teal/pink/dark default, yellow ONLY on hover */
+  .btn {
+    border: 3px solid; border-radius: 14px; padding: 17px; width: 100%;
+    font-family: var(--font); font-size: 16px; font-weight: 900;
+    cursor: pointer; letter-spacing: -0.3px; transition: all 0.2s; text-align: center;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--dark); border-color: var(--dark); color: #fff; }
+  .btn-primary:hover { background: var(--yellow); border-color: var(--yellow-deep); color: var(--dark); }
+  .btn-teal { background: var(--teal); border-color: var(--teal); color: #fff; font-size: 14px; }
+  .btn-teal:hover { background: var(--yellow); border-color: var(--yellow-deep); color: var(--dark); }
+  .btn-pink { background: var(--pink); border-color: var(--pink); color: #fff; font-size: 14px; }
+  .btn-pink:hover { background: var(--yellow); border-color: var(--yellow-deep); color: var(--dark); }
+  .btn-outline { background: transparent; border-color: var(--dark); color: var(--dark); font-weight: 700; font-size: 14px; }
+  .btn-outline:hover { background: var(--yellow); border-color: var(--yellow-deep); color: var(--dark); }
+
+  /* HOME */
+  .home { padding: 52px 22px 32px; display: flex; flex-direction: column; min-height: 100%; }
+  .home-logo { margin-bottom: 22px; }
+  .home-logo-main { font-size: 52px; font-weight: 900; letter-spacing: -2px; line-height: 0.92; color: var(--teal); position: relative; }
+  .home-logo-main .teal { color: var(--teal); }
+  .home-logo-main .pink-dot { color: var(--pink); font-size: 52px; position: relative; top: -4px; }
+  .home-logo-tag { font-size: 12px; font-weight: 500; letter-spacing: 4px; text-transform: uppercase; color: #ccc; margin-top: 8px; }
+
+  .home-pair-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; }
+  .home-pair-row + .home-pair-row { border-top: 2px solid var(--border-light); }
+  .home-pr-left { display: flex; align-items: center; gap: 12px; }
+  .home-pr-name { font-size: 14px; font-weight: 700; color: var(--dark); }
+  .home-pr-sub { font-size: 9px; color: var(--muted); letter-spacing: 1px; }
+  .home-pr-sub.ok { color: var(--teal); }
+  .home-spacer { flex: 1; }
+  .mode-row { display: flex; justify-content: space-between; align-items: center; font-size: 22px; font-weight: 900; letter-spacing: -1px; color: var(--dark); }
+  .mode-row .arr { font-size: 18px; color: var(--muted); font-weight: 400; }
+
+  /* TEST */
+  .test { padding: 52px 22px 32px; display: flex; flex-direction: column; min-height: 100%; }
+  .test-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .test-title { font-size: 20px; font-weight: 900; color: var(--dark); letter-spacing: -0.5px; }
+  .test-phase { font-size: 10px; font-weight: 700; padding: 5px 12px; border-radius: 6px; letter-spacing: 1px; text-transform: uppercase; border: 2px solid; }
+  .test-phase.warmup { background: var(--pink-bg); color: var(--pink); border-color: var(--pink); animation: pulse 2s ease-in-out infinite; }
+  .test-phase.testing { background: var(--teal-bg); color: var(--teal); border-color: var(--teal); }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+  .timer-block { border: 3px solid var(--dark); border-radius: 14px; overflow: hidden; margin-bottom: 10px; text-align: center; }
+  .timer-body { background: var(--card); padding: 18px 16px; }
+  .timer-val { font-size: 52px; font-weight: 900; letter-spacing: -2px; color: var(--dark); line-height: 1; }
+  .timer-sub { font-size: 10px; color: var(--muted); letter-spacing: 1px; margin-top: 2px; }
+
+  .warmup-bar { background: var(--card); border: 3px solid var(--dark); border-radius: 14px; padding: 12px 16px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+  .warmup-left { display: flex; align-items: center; gap: 10px; }
+  .warmup-label { font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+  .warmup-watts { font-size: 18px; font-weight: 900; color: var(--dark); }
+  .warmup-watts span { font-size: 11px; color: var(--muted); font-weight: 400; }
+  .skip-btn { font-family: var(--font); font-size: 9px; font-weight: 700; padding: 6px 14px; border-radius: 6px; letter-spacing: 1px; text-transform: uppercase; background: var(--dark); color: #fff; border: 2px solid var(--dark); cursor: pointer; transition: all 0.2s; }
+  .skip-btn:hover { background: var(--yellow); color: var(--dark); border-color: var(--yellow-deep); }
+
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+  .stat-card { border: 3px solid var(--dark); border-radius: 14px; overflow: hidden; }
+  .stat-head { padding: 7px 10px; font-size: 8px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #fff; display: flex; align-items: center; gap: 5px; }
+  .stat-body { background: var(--card); padding: 10px; text-align: center; }
+  .stat-val { font-size: 30px; font-weight: 900; letter-spacing: -1px; color: var(--dark); line-height: 1; }
+  .stat-unit { font-size: 9px; color: var(--muted); letter-spacing: 1px; margin-top: 1px; }
+
+  .progress-wrap { margin-bottom: 10px; }
+  .progress-label { font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; display: flex; justify-content: space-between; }
+  .progress-track { height: 10px; background: #e8e5e0; border-radius: 5px; border: 2px solid var(--dark); overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 3px; background: var(--teal); width: 35%; transition: width 0.3s; }
+  .test-spacer { flex: 1; }
+
+  /* RESULT */
+  .result { padding: 52px 22px 32px; display: flex; flex-direction: column; min-height: 100%; }
+  .result-header { text-align: center; margin-bottom: 18px; }
+  .result-badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 6px 16px; border-radius: 6px; letter-spacing: 2px; text-transform: uppercase; background: var(--teal); color: #fff; margin-bottom: 10px; }
+  .result-title { font-size: 22px; font-weight: 900; color: var(--dark); letter-spacing: -1px; }
+
+  .ftp-block { border: 3px solid var(--dark); border-radius: 14px; overflow: hidden; margin-bottom: 10px; text-align: center; }
+  .ftp-body { background: var(--card); padding: 24px 16px; }
+  .ftp-val { font-size: 68px; font-weight: 900; letter-spacing: -3px; color: var(--dark); line-height: 1; }
+  .ftp-unit { font-size: 12px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-top: 2px; }
+  .ftp-change { display: inline-block; font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 4px; margin-top: 10px; background: var(--teal-bg); color: var(--teal); border: 2px solid var(--teal); }
+
+  .result-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+  .result-stat { border: 3px solid var(--dark); border-radius: 14px; overflow: hidden; }
+  .result-stat-body { background: var(--card); padding: 12px; text-align: center; }
+  .result-stat-val { font-size: 30px; font-weight: 900; letter-spacing: -1px; color: var(--dark); line-height: 1; }
+  .result-stat-unit { font-size: 9px; color: var(--muted); letter-spacing: 1px; margin-top: 1px; }
+
+  .detail-block { border: 3px solid var(--dark); border-radius: 14px; overflow: hidden; margin-bottom: 10px; }
+  .detail-body { background: var(--card); }
+  .detail-row { display: flex; justify-content: space-between; align-items: center; padding: 11px 16px; font-size: 13px; }
+  .detail-row + .detail-row { border-top: 2px solid var(--border-light); }
+  .detail-label { font-weight: 600; color: var(--dark); }
+  .detail-val { font-weight: 700; color: var(--dark); }
+  .result-spacer { flex: 1; }
+  .result-btns { display: flex; flex-direction: column; gap: 8px; }
+
+  /* OVERLAY */
+  .overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; display: flex; align-items: flex-end; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
+  .overlay.active { opacity: 1; pointer-events: all; }
+  .overlay-panel { background: var(--bg); width: 100%; border-radius: 24px 24px 0 0; padding: 24px 22px 40px; transform: translateY(20px); transition: transform 0.3s; }
+  .overlay.active .overlay-panel { transform: translateY(0); }
+  .overlay-title { font-size: 18px; font-weight: 900; color: var(--dark); letter-spacing: -0.5px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
+  .overlay-close { width: 32px; height: 32px; border: 2px solid var(--dark); border-radius: 8px; background: var(--card); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; color: var(--dark); font-family: var(--font); transition: all 0.2s; }
+  .overlay-close:hover { background: var(--yellow); border-color: var(--yellow-deep); }
+
+  .overlay-option { border: 3px solid var(--dark); border-radius: 14px; padding: 16px; margin-bottom: 8px; background: var(--card); cursor: pointer; transition: all 0.2s; display: flex; justify-content: space-between; align-items: center; }
+  .overlay-option:hover { border-color: var(--yellow-deep); background: var(--yellow-bg); }
+  .overlay-option.selected { border-color: var(--teal); background: var(--teal-bg); }
+  .overlay-option-name { font-size: 15px; font-weight: 900; color: var(--dark); }
+  .overlay-option-desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .overlay-check { width: 22px; height: 22px; border: 2.5px solid var(--dark); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px; color: transparent; flex-shrink: 0; transition: all 0.2s; }
+  .overlay-option.selected .overlay-check { background: var(--teal); border-color: var(--teal); color: #fff; }
+  .overlay-option:hover .overlay-check { border-color: var(--yellow-deep); }
+</style>
+</head>
+<body>
+<div class="phone-frame">
+
+  <!-- HOME -->
+  <div class="screen active" id="screen-home">
+    <div class="home">
+      <div class="home-logo">
+        <div class="home-logo-main"><span class="teal">FTP</span><span class="pink-dot">.</span><br><span class="teal">TEST</span></div>
+        <div class="home-logo-tag">Power Lab</div>
+      </div>
+      <div class="block" id="btn-mode">
+        <div class="block-head teal">Select Mode</div>
+        <div class="block-body"><div class="mode-row"><span id="mode-display">Ramp Test</span><span class="arr">›</span></div></div>
+      </div>
+      <div class="block" style="cursor:default;" onmouseenter="this.style.transform='none';this.style.borderColor='var(--dark)'" onmouseleave="this.style.borderColor='var(--dark)'">
+        <div class="block-head pink" id="pair-head">Pairing</div>
+        <div style="background:var(--card);">
+          <div class="home-pair-row">
+            <div class="home-pr-left">
+              <div class="icon-box" style="background:#FEF3C7;">⚡</div>
+              <div><div class="home-pr-name">Trainer</div><div class="home-pr-sub ok">● Connected</div></div>
+            </div>
+            <span class="tag on">ON</span>
+          </div>
+          <div class="home-pair-row">
+            <div class="home-pr-left">
+              <div class="icon-box" style="background:#FCE7F3;">♥</div>
+              <div><div class="home-pr-name">Heart Rate</div><div class="home-pr-sub">○ Scanning</div></div>
+            </div>
+            <span class="tag off">---</span>
+          </div>
+        </div>
+      </div>
+      <div class="home-spacer"></div>
+      <button class="btn btn-primary" id="btn-start">▶ Start Test</button>
+    </div>
+  </div>
+
+  <!-- TEST -->
+  <div class="screen" id="screen-test">
+    <div class="test">
+      <div class="test-top">
+        <div class="test-title">Test Running</div>
+        <div class="test-phase warmup" id="phase-badge">Warmup</div>
+      </div>
+      <div class="timer-block">
+        <div class="block-head teal"><span>⏱</span> Elapsed Time</div>
+        <div class="timer-body">
+          <div class="timer-val" id="timer-display">03:24</div>
+          <div class="timer-sub">of ~20:00 est.</div>
+        </div>
+      </div>
+      <div class="warmup-bar" id="warmup-bar">
+        <div class="warmup-left">
+          <div class="warmup-label">Warmup</div>
+          <div class="warmup-watts">120 <span>W</span></div>
+        </div>
+        <button class="skip-btn" id="btn-skip">SKIP ››</button>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-head" style="background:var(--teal);"><span>⚡</span> Power</div><div class="stat-body"><div class="stat-val" id="stat-power">185</div><div class="stat-unit">Watts</div></div></div>
+        <div class="stat-card"><div class="stat-head" style="background:var(--pink);"><span>♥</span> Heart Rate</div><div class="stat-body"><div class="stat-val" id="stat-hr">142</div><div class="stat-unit">BPM</div></div></div>
+        <div class="stat-card"><div class="stat-head" style="background:var(--teal-dark);"><span>⟳</span> Cadence</div><div class="stat-body"><div class="stat-val" id="stat-cad">88</div><div class="stat-unit">RPM</div></div></div>
+        <div class="stat-card"><div class="stat-head" style="background:var(--dark);"><span>◎</span> Speed</div><div class="stat-body"><div class="stat-val" id="stat-speed">32</div><div class="stat-unit">KM/H</div></div></div>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-label"><span>Progress</span><span id="progress-pct">35%</span></div>
+        <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+      </div>
+      <div class="test-spacer"></div>
+      <button class="btn btn-pink" id="btn-stop" style="margin-bottom:8px;">■ Stop Test</button>
+      <button class="btn btn-outline" id="btn-finish">Finish & Calculate</button>
+    </div>
+  </div>
+
+  <!-- RESULT -->
+  <div class="screen" id="screen-result">
+    <div class="result">
+      <div class="result-header">
+        <div class="result-badge">✓ Test Complete</div>
+        <div class="result-title">Your Results</div>
+      </div>
+      <div class="ftp-block">
+        <div class="block-head pink">Estimated FTP</div>
+        <div class="ftp-body">
+          <div class="ftp-val">263</div>
+          <div class="ftp-unit">Watts</div>
+          <div class="ftp-change">▲ +8W vs last test</div>
+        </div>
+      </div>
+      <div class="result-stats">
+        <div class="result-stat"><div class="stat-head" style="background:var(--pink);"><span>♥</span> Avg HR</div><div class="result-stat-body"><div class="result-stat-val">168</div><div class="result-stat-unit">BPM</div></div></div>
+        <div class="result-stat"><div class="stat-head" style="background:var(--teal);"><span>⏱</span> Duration</div><div class="result-stat-body"><div class="result-stat-val">19:42</div><div class="result-stat-unit">Minutes</div></div></div>
+      </div>
+      <div class="detail-block">
+        <div class="block-head dark">Test Summary</div>
+        <div class="detail-body">
+          <div class="detail-row"><span class="detail-label">Avg Power</span><span class="detail-val">248 W</span></div>
+          <div class="detail-row"><span class="detail-label">Max Power</span><span class="detail-val">342 W</span></div>
+          <div class="detail-row"><span class="detail-label">Max Heart Rate</span><span class="detail-val">186 BPM</span></div>
+          <div class="detail-row"><span class="detail-label">Avg Cadence</span><span class="detail-val">91 RPM</span></div>
+          <div class="detail-row"><span class="detail-label">Test Mode</span><span class="detail-val">Ramp</span></div>
+        </div>
+      </div>
+      <div class="result-spacer"></div>
+      <div class="result-btns">
+        <button class="btn btn-teal" id="btn-save">✓ Save Result</button>
+        <button class="btn btn-outline" id="btn-home">← Back to Home</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODE OVERLAY -->
+  <div class="overlay" id="overlay-mode">
+    <div class="overlay-panel">
+      <div class="overlay-title">Select Mode <div class="overlay-close" id="btn-close-mode">✕</div></div>
+      <div class="overlay-option selected" data-mode="Ramp Test"><div><div class="overlay-option-name">Ramp Test</div><div class="overlay-option-desc">Incremental power every minute</div></div><div class="overlay-check">✓</div></div>
+      <div class="overlay-option" data-mode="20 Min Test"><div><div class="overlay-option-name">20 Min Test</div><div class="overlay-option-desc">Sustain max effort for 20 min</div></div><div class="overlay-check">✓</div></div>
+      <div class="overlay-option" data-mode="8 Min Test"><div><div class="overlay-option-name">8 Min Test</div><div class="overlay-option-desc">Two 8-minute max efforts</div></div><div class="overlay-check">✓</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const screens = { home: document.getElementById('screen-home'), test: document.getElementById('screen-test'), result: document.getElementById('screen-result') };
+  let current = 'home';
+  function goTo(name) { screens[current].classList.remove('active'); current = name; screens[name].classList.add('active'); screens[name].scrollTop = 0; }
+
+  document.getElementById('btn-start').onclick = () => goTo('test');
+  document.getElementById('btn-finish').onclick = () => goTo('result');
+  document.getElementById('btn-stop').onclick = () => goTo('result');
+  document.getElementById('btn-home').onclick = () => goTo('home');
+  document.getElementById('btn-save').onclick = () => goTo('home');
+
+  const warmupBar = document.getElementById('warmup-bar');
+  const phaseBadge = document.getElementById('phase-badge');
+  document.getElementById('btn-skip').onclick = () => { warmupBar.style.display = 'none'; phaseBadge.textContent = 'Testing'; phaseBadge.className = 'test-phase testing'; };
+
+  const overlay = document.getElementById('overlay-mode');
+  document.getElementById('btn-mode').onclick = () => overlay.classList.add('active');
+  document.getElementById('btn-close-mode').onclick = () => overlay.classList.remove('active');
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.classList.remove('active'); };
+
+  const modeOptions = document.querySelectorAll('.overlay-option');
+  const modeDisplay = document.getElementById('mode-display');
+  modeOptions.forEach(opt => { opt.onclick = () => { modeOptions.forEach(o => o.classList.remove('selected')); opt.classList.add('selected'); modeDisplay.textContent = opt.dataset.mode; setTimeout(() => overlay.classList.remove('active'), 200); }; });
+
+  // Prevent pairing block yellow hover
+  const pairBlock = document.querySelector('.block[style*="cursor:default"]');
+  if (pairBlock) {
+    const pairHead = pairBlock.querySelector('.block-head');
+    pairBlock.addEventListener('mouseenter', () => { pairBlock.style.borderColor = 'var(--dark)'; if(pairHead) pairHead.style.background = ''; });
+  }
+
+  let statsInterval;
+  const obs = new MutationObserver(() => {
+    if (screens.test.classList.contains('active')) {
+      clearInterval(statsInterval); warmupBar.style.display = 'flex'; phaseBadge.textContent = 'Warmup'; phaseBadge.className = 'test-phase warmup';
+      let sec = 204;
+      statsInterval = setInterval(() => {
+        sec++;
+        document.getElementById('timer-display').textContent = Math.floor(sec/60).toString().padStart(2,'0') + ':' + (sec%60).toString().padStart(2,'0');
+        document.getElementById('stat-power').textContent = 180 + Math.floor(Math.random()*15);
+        document.getElementById('stat-hr').textContent = 140 + Math.floor(Math.random()*8);
+        document.getElementById('stat-cad').textContent = 86 + Math.floor(Math.random()*6);
+        document.getElementById('stat-speed').textContent = 30 + Math.floor(Math.random()*5);
+        const pct = Math.min(100, Math.floor((sec/1200)*100));
+        document.getElementById('progress-pct').textContent = pct + '%';
+        document.getElementById('progress-fill').style.width = pct + '%';
+      }, 1000);
+    } else { clearInterval(statsInterval); }
+  });
+  obs.observe(screens.test, { attributes: true, attributeFilter: ['class'] });
+</script>
+</body>
+</html>

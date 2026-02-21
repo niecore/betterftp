@@ -137,6 +137,18 @@ class RampTestController extends Notifier<RampTestState> {
     }
   }
 
+  void skipWarmup() {
+    if (state.phase != RampTestPhase.warmup) return;
+    final targetPower = _config.startPower;
+    _trainerRepository.setTargetPower(targetPower);
+    state = state.copyWith(
+      phase: RampTestPhase.ramping,
+      stageElapsedSeconds: 0,
+      currentStage: 0,
+      targetPower: targetPower,
+    );
+  }
+
   void stop() {
     _timer?.cancel();
     _timer = null;

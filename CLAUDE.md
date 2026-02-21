@@ -17,6 +17,29 @@ This file provides context for Claude Code to understand the project and continu
 - **Charting**: fl_chart
 - **Protocol**: Bluetooth FTMS (Fitness Machine Service)
 
+## Design System
+
+**Brand:** FTP.TEST — POWER LAB | **Style:** Bold retro / boxy 2000s
+
+### Key Design Files
+- `design/design-guideline.md` — Full design specs, component rules, layout
+- `design/color-schema.md` — Color palette with usage rules
+- `design/design-system.css` — CSS tokens (translate to Flutter equivalents)
+- `design/index.html` — Interactive click dummy (3 screens: Home, Test, Result)
+
+### Quick Reference
+- **Font**: Iosevka monospace (400/500/700/900) — used for ALL text
+- **Colors**: Teal (`#0D9488`) = primary, Pink (`#EC4899`) = secondary, Yellow (`#FACC15`) = press/hover ONLY (never at rest)
+- **Neutrals**: Dark (`#1a1a1a`) = borders/text, Bg (`#F5F5F0`) = scaffold, Card (`#FFFFFF`) = block bodies
+- **Core component**: "Block" = bordered card (3px border, 14px radius) with colored header strip (teal/pink/dark)
+- **Buttons**: All turn yellow on press. Types: primary (dark), teal, pink, outline
+- **Logo**: "FTP." (teal, dot in pink) linebreak "TEST" (teal), subtitle "POWER LAB" in #ccc
+
+### Screens (3 total)
+1. **Home** — Logo, mode selector block, pairing block (trainer + HR), start button
+2. **Test Running** — Timer, warmup bar + skip, 2×2 stat grid (power/HR/cadence/speed), progress bar, stop/finish buttons
+3. **Result** — FTP value (large), avg HR + duration cards, test summary details, save/home buttons
+
 ## Key Technical Details
 
 ### FTMS Protocol
@@ -37,11 +60,14 @@ See PLAN.md for full architecture. Key directories:
 - `lib/features/bluetooth/` - FTMS device connection
 - `lib/features/ramp_test/` - Test logic and UI
 - `lib/features/results/` - FTP display and history
+- `lib/core/theme/` - App theme, color tokens, spacing tokens
+- `lib/shared/widgets/` - Reusable design system widgets (block_card, app_button, stat_card, etc.)
+- `design/` - Design guidelines, color schema, click dummy, CSS reference
 
 ## Current Status
 
 - [ ] Project not yet created
-- Refer to PLAN.md Section 7 for implementation phases
+- Refer to PLAN.md Section 8 for implementation phases
 
 ## Development Setup
 
@@ -100,10 +126,14 @@ flutter test
 ## Important Files to Read
 
 When resuming work:
-1. `PLAN.md` - Full implementation plan
+1. `PLAN.md` - Full implementation plan (includes design system in Section 6)
 2. `pubspec.yaml` - Dependencies (once created)
-3. `lib/features/bluetooth/data/trainer_repository.dart` - FTMS integration
-4. `lib/features/ramp_test/presentation/ramp_test_controller.dart` - Test logic
+3. `design/design-guideline.md` - Design specs, component rules, screen layouts
+4. `design/color-schema.md` - Color palette and usage rules
+5. `design/index.html` - Click dummy prototype (open in browser to preview)
+6. `lib/features/bluetooth/data/trainer_repository.dart` - FTMS integration
+7. `lib/features/ramp_test/presentation/ramp_test_controller.dart` - Test logic
+8. `lib/core/theme/app_colors.dart` - Color palette implementation
 
 ## User Context
 

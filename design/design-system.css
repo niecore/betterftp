@@ -1,0 +1,628 @@
+/* ============================================================
+   FTP.TEST Design System — v1.0
+   Font: Iosevka (monospace)
+   Colors: Teal (primary), Pink (secondary), Yellow (confirm/hover)
+   Style: Bold retro / boxy 2000s
+   ============================================================ */
+
+/* =====================
+   FONT IMPORTS
+   ===================== */
+@font-face {
+  font-family: 'Iosevka';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url(https://cdn.jsdelivr.net/fontsource/fonts/iosevka@latest/latin-400-normal.woff2) format('woff2');
+}
+@font-face {
+  font-family: 'Iosevka';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  src: url(https://cdn.jsdelivr.net/fontsource/fonts/iosevka@latest/latin-500-normal.woff2) format('woff2');
+}
+@font-face {
+  font-family: 'Iosevka';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 700;
+  src: url(https://cdn.jsdelivr.net/fontsource/fonts/iosevka@latest/latin-700-normal.woff2) format('woff2');
+}
+@font-face {
+  font-family: 'Iosevka';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 900;
+  src: url(https://cdn.jsdelivr.net/fontsource/fonts/iosevka@latest/latin-900-normal.woff2) format('woff2');
+}
+
+
+/* =====================
+   COLOR TOKENS
+   ===================== */
+:root {
+  /* --- Primary: Teal --- */
+  --color-teal:             #0D9488;
+  --color-teal-dark:        #0F766E;
+  --color-teal-light:       #5EEAD4;
+  --color-teal-bg:          rgba(13, 148, 136, 0.06);
+
+  /* --- Secondary: Pink --- */
+  --color-pink:             #EC4899;
+  --color-pink-dark:        #DB2777;
+  --color-pink-light:       #F9A8D4;
+  --color-pink-bg:          rgba(236, 72, 153, 0.06);
+
+  /* --- Confirm/Hover: Yellow --- */
+  --color-yellow:           #FACC15;
+  --color-yellow-deep:      #EAB308;
+  --color-yellow-light:     #FDE047;
+  --color-yellow-bg:        rgba(234, 179, 8, 0.08);
+
+  /* --- Neutrals --- */
+  --color-dark:             #1a1a1a;
+  --color-dark-soft:        #333333;
+  --color-bg:               #F5F5F0;
+  --color-card:             #FFFFFF;
+  --color-muted:            #AAAAAA;
+  --color-border-light:     #F0F0F0;
+  --color-border:           #1a1a1a;
+
+  /* --- Semantic icon backgrounds --- */
+  --color-trainer-bg:       #FEF3C7;   /* warm yellow tint */
+  --color-hr-bg:            #FCE7F3;   /* warm pink tint */
+  --color-cadence-bg:       #F0FDF4;   /* light green tint */
+  --color-speed-bg:         #E0F2FE;   /* light blue tint */
+
+  /* --- Typography --- */
+  --font-family:            'Iosevka', monospace;
+  --font-weight-regular:    400;
+  --font-weight-medium:     500;
+  --font-weight-bold:       700;
+  --font-weight-black:      900;
+
+  /* --- Spacing --- */
+  --space-xs:               4px;
+  --space-sm:               8px;
+  --space-md:               12px;
+  --space-lg:               16px;
+  --space-xl:               20px;
+  --space-2xl:              24px;
+  --space-3xl:              32px;
+
+  /* --- Border --- */
+  --border-width:           3px;
+  --border-width-thin:      2px;
+  --border-width-icon:      2.5px;
+  --border-radius-sm:       6px;
+  --border-radius-md:       10px;
+  --border-radius-lg:       14px;
+  --border-radius-xl:       18px;
+  --border-radius-pill:     50px;
+  --border-radius-phone:    44px;
+
+  /* --- Transitions --- */
+  --transition-fast:        0.12s ease;
+  --transition-normal:      0.2s ease;
+  --transition-smooth:      0.35s ease;
+}
+
+
+/* =====================
+   RESET & BASE
+   ===================== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-dark);
+  background: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+
+/* =====================
+   TYPOGRAPHY
+   ===================== */
+
+/* Logo */
+.logo-main {
+  font-size: 52px;
+  font-weight: var(--font-weight-black);
+  letter-spacing: -2px;
+  line-height: 0.92;
+  color: var(--color-teal);
+}
+
+.logo-main .dot {
+  color: var(--color-pink);
+}
+
+.logo-tag {
+  font-size: 11px;
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: #ccc;
+  margin-top: var(--space-sm);
+}
+
+/* Headings */
+.heading-lg {
+  font-size: 22px;
+  font-weight: var(--font-weight-black);
+  letter-spacing: -1px;
+  color: var(--color-dark);
+}
+
+.heading-md {
+  font-size: 20px;
+  font-weight: var(--font-weight-black);
+  letter-spacing: -0.5px;
+  color: var(--color-dark);
+}
+
+.heading-sm {
+  font-size: 16px;
+  font-weight: var(--font-weight-black);
+  color: var(--color-dark);
+}
+
+/* Labels */
+.label-caps {
+  font-size: 9px;
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.label-sm {
+  font-size: 9px;
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 1px;
+  color: var(--color-muted);
+}
+
+/* Values */
+.value-xl {
+  font-size: 68px;
+  font-weight: var(--font-weight-black);
+  letter-spacing: -3px;
+  line-height: 1;
+  color: var(--color-dark);
+}
+
+.value-lg {
+  font-size: 52px;
+  font-weight: var(--font-weight-black);
+  letter-spacing: -2px;
+  line-height: 1;
+  color: var(--color-dark);
+}
+
+.value-md {
+  font-size: 30px;
+  font-weight: var(--font-weight-black);
+  letter-spacing: -1px;
+  line-height: 1;
+  color: var(--color-dark);
+}
+
+.value-sm {
+  font-size: 18px;
+  font-weight: var(--font-weight-black);
+  color: var(--color-dark);
+}
+
+.unit {
+  font-size: 9px;
+  color: var(--color-muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+
+/* =====================
+   BLOCK COMPONENT
+   The core UI building block — bordered card with colored header
+   ===================== */
+.block {
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--border-radius-lg);
+  margin-bottom: var(--space-md);
+  overflow: hidden;
+  cursor: pointer;
+  transition:
+    transform var(--transition-fast),
+    border-color var(--transition-normal);
+}
+
+.block:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-yellow-deep);
+}
+
+.block--static {
+  cursor: default;
+}
+
+.block--static:hover {
+  transform: none;
+  border-color: var(--color-border);
+}
+
+.block__head {
+  padding: 10px var(--space-lg);
+  font-size: 9px;
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #fff;
+  transition: background var(--transition-normal);
+}
+
+.block__head--teal    { background: var(--color-teal); }
+.block__head--pink    { background: var(--color-pink); }
+.block__head--dark    { background: var(--color-dark); }
+
+/* Yellow hover on interactive blocks */
+.block:hover .block__head--teal,
+.block:hover .block__head--pink {
+  background: var(--color-yellow-deep);
+  color: var(--color-dark);
+}
+
+/* Static blocks keep their header color */
+.block--static:hover .block__head {
+  color: #fff;
+}
+.block--static:hover .block__head--pink {
+  background: var(--color-pink);
+}
+.block--static:hover .block__head--teal {
+  background: var(--color-teal);
+}
+
+.block__body {
+  padding: var(--space-lg);
+  background: var(--color-card);
+}
+
+
+/* =====================
+   TAG / BADGE
+   ===================== */
+.tag {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: var(--font-weight-bold);
+  padding: 4px 10px;
+  border-radius: var(--border-radius-sm);
+  border: var(--border-width-thin) solid;
+  letter-spacing: 1px;
+}
+
+.tag--on {
+  border-color: var(--color-teal);
+  color: var(--color-teal);
+  background: var(--color-teal-bg);
+}
+
+.tag--off {
+  border-color: #ddd;
+  color: #ccc;
+}
+
+.tag--yellow {
+  border-color: var(--color-yellow-deep);
+  color: var(--color-yellow-deep);
+  background: var(--color-yellow-bg);
+}
+
+.badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: var(--font-weight-bold);
+  padding: 6px 16px;
+  border-radius: var(--border-radius-sm);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.badge--teal {
+  background: var(--color-teal);
+  color: #fff;
+}
+
+.badge--pink {
+  background: var(--color-pink);
+  color: #fff;
+}
+
+/* Phase badge (test screen) */
+.phase-badge {
+  font-size: 10px;
+  font-weight: var(--font-weight-bold);
+  padding: 5px 12px;
+  border-radius: var(--border-radius-sm);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border: var(--border-width-thin) solid;
+}
+
+.phase-badge--warmup {
+  background: var(--color-pink-bg);
+  color: var(--color-pink);
+  border-color: var(--color-pink);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.phase-badge--testing {
+  background: var(--color-teal-bg);
+  color: var(--color-teal);
+  border-color: var(--color-teal);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+
+/* =====================
+   ICON BOX
+   ===================== */
+.icon-box {
+  width: 36px;
+  height: 36px;
+  border: var(--border-width-icon) solid var(--color-border);
+  border-radius: var(--border-radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+.icon-box--trainer  { background: var(--color-trainer-bg); }
+.icon-box--hr       { background: var(--color-hr-bg); }
+.icon-box--cadence  { background: var(--color-cadence-bg); }
+.icon-box--speed    { background: var(--color-speed-bg); }
+
+
+/* =====================
+   BUTTONS
+   Default: teal, pink, or dark
+   Hover: ALWAYS yellow (confirmation feedback)
+   ===================== */
+.btn {
+  display: block;
+  width: 100%;
+  border: var(--border-width) solid;
+  border-radius: var(--border-radius-lg);
+  padding: 17px;
+  font-family: var(--font-family);
+  font-size: 16px;
+  font-weight: var(--font-weight-black);
+  cursor: pointer;
+  letter-spacing: -0.3px;
+  transition: all var(--transition-normal);
+  text-align: center;
+  text-decoration: none;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+/* Primary (dark) */
+.btn--primary {
+  background: var(--color-dark);
+  border-color: var(--color-dark);
+  color: #fff;
+}
+
+.btn--primary:hover {
+  background: var(--color-yellow);
+  border-color: var(--color-yellow-deep);
+  color: var(--color-dark);
+}
+
+/* Teal */
+.btn--teal {
+  background: var(--color-teal);
+  border-color: var(--color-teal);
+  color: #fff;
+  font-size: 14px;
+}
+
+.btn--teal:hover {
+  background: var(--color-yellow);
+  border-color: var(--color-yellow-deep);
+  color: var(--color-dark);
+}
+
+/* Pink */
+.btn--pink {
+  background: var(--color-pink);
+  border-color: var(--color-pink);
+  color: #fff;
+  font-size: 14px;
+}
+
+.btn--pink:hover {
+  background: var(--color-yellow);
+  border-color: var(--color-yellow-deep);
+  color: var(--color-dark);
+}
+
+/* Outline */
+.btn--outline {
+  background: transparent;
+  border-color: var(--color-dark);
+  color: var(--color-dark);
+  font-weight: var(--font-weight-bold);
+  font-size: 14px;
+}
+
+.btn--outline:hover {
+  background: var(--color-yellow);
+  border-color: var(--color-yellow-deep);
+  color: var(--color-dark);
+}
+
+/* Small inline button (e.g. Skip) */
+.btn-inline {
+  font-family: var(--font-family);
+  font-size: 9px;
+  font-weight: var(--font-weight-bold);
+  padding: 6px 14px;
+  border-radius: var(--border-radius-sm);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  background: var(--color-dark);
+  color: #fff;
+  border: var(--border-width-thin) solid var(--color-dark);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.btn-inline:hover {
+  background: var(--color-yellow);
+  color: var(--color-dark);
+  border-color: var(--color-yellow-deep);
+}
+
+
+/* =====================
+   STAT CARD (Test screen)
+   ===================== */
+.stat-card {
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+}
+
+.stat-card__head {
+  padding: 7px 10px;
+  font-size: 8px;
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.stat-card__head--power    { background: var(--color-teal); }
+.stat-card__head--hr       { background: var(--color-pink); }
+.stat-card__head--cadence  { background: var(--color-teal-dark); }
+.stat-card__head--speed    { background: var(--color-dark); }
+
+.stat-card__body {
+  background: var(--color-card);
+  padding: 10px;
+  text-align: center;
+}
+
+
+/* =====================
+   PROGRESS BAR
+   ===================== */
+.progress__track {
+  height: 10px;
+  background: #e8e5e0;
+  border-radius: 5px;
+  border: var(--border-width-thin) solid var(--color-border);
+  overflow: hidden;
+}
+
+.progress__fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--color-teal);
+  transition: width 0.3s ease;
+}
+
+
+/* =====================
+   OVERLAY / BOTTOM SHEET
+   ===================== */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 100;
+  display: flex;
+  align-items: flex-end;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.overlay--active {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.overlay__panel {
+  background: var(--color-bg);
+  width: 100%;
+  border-radius: var(--border-radius-xl) var(--border-radius-xl) 0 0;
+  padding: var(--space-2xl) var(--space-xl) 40px;
+  transform: translateY(20px);
+  transition: transform 0.3s ease;
+}
+
+.overlay--active .overlay__panel {
+  transform: translateY(0);
+}
+
+.overlay__option {
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--border-radius-lg);
+  padding: var(--space-lg);
+  margin-bottom: var(--space-sm);
+  background: var(--color-card);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.overlay__option:hover {
+  border-color: var(--color-yellow-deep);
+  background: var(--color-yellow-bg);
+}
+
+.overlay__option--selected {
+  border-color: var(--color-teal);
+  background: var(--color-teal-bg);
+}
+
+
+/* =====================
+   UTILITY CLASSES
+   ===================== */
+.text-teal    { color: var(--color-teal); }
+.text-pink    { color: var(--color-pink); }
+.text-yellow  { color: var(--color-yellow-deep); }
+.text-dark    { color: var(--color-dark); }
+.text-muted   { color: var(--color-muted); }
+
+.bg-teal      { background: var(--color-teal); }
+.bg-pink      { background: var(--color-pink); }
+.bg-yellow    { background: var(--color-yellow); }
+.bg-dark      { background: var(--color-dark); }
+.bg-card      { background: var(--color-card); }
+.bg-page      { background: var(--color-bg); }

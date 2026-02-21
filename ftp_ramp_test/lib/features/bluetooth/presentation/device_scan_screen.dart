@@ -1,11 +1,14 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/ble_constants.dart';
 import '../../../core/constants/ftms_constants.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../shared/widgets/app_button.dart';
+import '../../../shared/widgets/icon_box.dart';
+import '../../../shared/widgets/tag_widget.dart';
 import '../data/ble_scanner_service.dart';
 import '../data/hr_repository.dart';
 import '../data/trainer_repository.dart';
@@ -20,495 +23,651 @@ class DeviceScanScreen extends ConsumerStatefulWidget {
 }
 
 class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen> {
-  List<ScannedDevice> _devices = [];
-  bool _isScanning = false;
-  String? _errorMessage;
-  StreamSubscription? _scanSubscription;
   String? _connectingToId;
-
-  @override
-  void dispose() {
-    _scanSubscription?.cancel();
-    super.dispose();
-  }
-
-  Future<void> _startScan() async {
-    final scannerService = ref.read(bleScannerServiceProvider);
-
-    // Check if Bluetooth is available
-    final isAvailable = await scannerService.isBluetoothAvailable();
-    if (!isAvailable) {
-      setState(() {
-        _errorMessage = 'Please enable Bluetooth';
-      });
-      return;
-    }
-
-    setState(() {
-      _isScanning = true;
-      _errorMessage = null;
-      _devices = [];
-    });
-
-    _scanSubscription?.cancel();
-    _scanSubscription = scannerService.scanForDevices().listen(
-      (devices) {
-        setState(() {
-          _devices = devices;
-        });
-      },
-      onError: (error) {
-        setState(() {
-          _isScanning = false;
-          _errorMessage = 'Scan error: $error';
-        });
-      },
-    );
-
-    // Stop scanning after 10 seconds
-    Future.delayed(const Duration(seconds: 10), () {
-      if (mounted && _isScanning) {
-        _stopScan();
-      }
-    });
-  }
-
-  void _stopScan() {
-    _scanSubscription?.cancel();
-    _scanSubscription = null;
-    setState(() {
-      _isScanning = false;
-    });
-  }
+  String _selectedMode = 'Ramp Test';
 
   Future<void> _connectAsTrainer(ScannedDevice device) async {
-    setState(() {
-      _connectingToId = device.id;
-    });
-
+    setState(() => _connectingToId = device.id);
     final repository = ref.read(trainerRepositoryProvider);
     final trainer = Trainer(id: device.id, name: device.name);
     final success = await repository.connect(trainer);
-
-    setState(() {
-      _connectingToId = null;
-    });
-
-    if (!success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to connect to ${device.name}')),
-      );
+    if (mounted) {
+      setState(() => _connectingToId = null);
+      if (!success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to connect to ${device.name}')),
+        );
+      }
     }
   }
 
   Future<void> _connectAsHrMonitor(ScannedDevice device) async {
-    setState(() {
-      _connectingToId = device.id;
-    });
-
+    setState(() => _connectingToId = device.id);
     final repository = ref.read(hrRepositoryProvider);
     final monitor = HrMonitor(id: device.id, name: device.name);
     final success = await repository.connect(monitor);
-
-    setState(() {
-      _connectingToId = null;
-    });
-
-    if (!success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to connect to ${device.name}')),
-      );
+    if (mounted) {
+      setState(() => _connectingToId = null);
+      if (!success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to connect to ${device.name}')),
+        );
+      }
     }
   }
 
-  bool _isTrainer(ScannedDevice device) {
-    return device.serviceUuids.contains(FtmsConstants.ftmsServiceShortUuid);
+  bool _isTrainer(ScannedDevice device) =>
+      device.serviceUuids.contains(FtmsConstants.ftmsServiceShortUuid);
+
+  bool _isHrMonitor(ScannedDevice device) =>
+      device.serviceUuids.contains(BleConstants.heartRateServiceShortUuid);
+
+  void _showDeviceSheet({required bool forHr}) {
+    final scannerService = ref.read(bleScannerServiceProvider);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.bg,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        // Start a fresh scan and pipe results directly into the sheet via StreamBuilder
+        final scanStream = scannerService.scanForDevices();
+
+        return StreamBuilder<List<ScannedDevice>>(
+          stream: scanStream,
+          initialData: const [],
+          builder: (ctx, snapshot) {
+            final allDevices = snapshot.data ?? [];
+            final relevantDevices = forHr
+                ? allDevices.where((d) => _isHrMonitor(d) && !_isTrainer(d)).toList()
+                : allDevices.where(_isTrainer).toList();
+            final isScanning = snapshot.connectionState == ConnectionState.active;
+
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screenSide,
+                AppSpacing.xxl,
+                AppSpacing.screenSide,
+                40,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        forHr ? 'Select HR Monitor' : 'Select Trainer',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.dark,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          scannerService.stopScan();
+                          Navigator.pop(ctx);
+                        },
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: AppColors.card,
+                            border: Border.all(color: AppColors.dark, width: 2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          alignment: Alignment.center,
+                          child: const Text(
+                            '\u2715',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: AppColors.dark,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  if (isScanning && relevantDevices.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 24),
+                      child: Center(
+                        child: Column(
+                          children: [
+                            SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.teal,
+                              ),
+                            ),
+                            SizedBox(height: 12),
+                            Text(
+                              'SCANNING...',
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 2,
+                                color: AppColors.muted,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ...relevantDevices.map((device) {
+                    final isConnecting = _connectingToId == device.id;
+                    return GestureDetector(
+                      onTap: isConnecting
+                          ? null
+                          : () async {
+                              scannerService.stopScan();
+                              if (forHr) {
+                                await _connectAsHrMonitor(device);
+                              } else {
+                                await _connectAsTrainer(device);
+                              }
+                              if (ctx.mounted) Navigator.pop(ctx);
+                            },
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.all(AppSpacing.lg),
+                        decoration: BoxDecoration(
+                          color: AppColors.card,
+                          border: Border.all(color: AppColors.dark, width: 3),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    device.name,
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w900,
+                                      color: AppColors.dark,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    device.id,
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: AppColors.muted,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (isConnecting)
+                              const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: AppColors.teal,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    ).whenComplete(() => scannerService.stopScan());
   }
 
-  bool _isHrMonitor(ScannedDevice device) {
-    return device.serviceUuids.contains(BleConstants.heartRateServiceShortUuid);
-  }
+  void _showModeSelector() {
+    final modes = [
+      ('Ramp Test', 'Incremental power every minute'),
+      ('20 Min Test', 'Sustain max effort for 20 min'),
+      ('8 Min Test', 'Two 8-minute max efforts'),
+    ];
 
-  Widget _buildDeviceSections() {
-    final trainers = _devices.where(_isTrainer).toList();
-    final hrMonitors =
-        _devices.where((d) => _isHrMonitor(d) && !_isTrainer(d)).toList();
-    final other =
-        _devices.where((d) => !_isTrainer(d) && !_isHrMonitor(d)).toList();
-
-    return ListView(
-      children: [
-        if (trainers.isNotEmpty) ...[
-          _SectionHeader(
-            icon: Icons.directions_bike,
-            label: 'Indoor Trainers',
-          ),
-          for (final device in trainers)
-            _DeviceTile(
-              device: device,
-              icon: Icons.directions_bike,
-              isConnecting: _connectingToId == device.id,
-              onTap: () => _connectAsTrainer(device),
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.bg,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.screenSide,
+          AppSpacing.xxl,
+          AppSpacing.screenSide,
+          40,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Select Mode',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.dark,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => Navigator.pop(ctx),
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: AppColors.card,
+                      border: Border.all(color: AppColors.dark, width: 2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    alignment: Alignment.center,
+                    child: const Text(
+                      '\u2715',
+                      style: TextStyle(fontSize: 16, color: AppColors.dark),
+                    ),
+                  ),
+                ),
+              ],
             ),
-        ],
-        if (hrMonitors.isNotEmpty) ...[
-          _SectionHeader(
-            icon: Icons.favorite,
-            label: 'HR Monitors',
-          ),
-          for (final device in hrMonitors)
-            _DeviceTile(
-              device: device,
-              icon: Icons.favorite,
-              isConnecting: _connectingToId == device.id,
-              onTap: () => _connectAsHrMonitor(device),
-            ),
-        ],
-        if (other.isNotEmpty) ...[
-          _SectionHeader(
-            icon: Icons.bluetooth,
-            label: 'Other Devices',
-          ),
-          for (final device in other)
-            _DeviceTile(
-              device: device,
-              icon: Icons.bluetooth,
-              isConnecting: _connectingToId == device.id,
-              onTap: () => _connectAsTrainer(device),
-            ),
-        ],
-      ],
+            const SizedBox(height: AppSpacing.lg),
+            ...modes.map((mode) {
+              final isSelected = _selectedMode == mode.$1;
+              return GestureDetector(
+                onTap: () {
+                  setState(() => _selectedMode = mode.$1);
+                  Future.delayed(
+                    const Duration(milliseconds: 200),
+                    () {
+                      if (ctx.mounted) Navigator.pop(ctx);
+                    },
+                  );
+                },
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  decoration: BoxDecoration(
+                    color: isSelected ? AppColors.tealBg : AppColors.card,
+                    border: Border.all(
+                      color: isSelected ? AppColors.teal : AppColors.dark,
+                      width: 3,
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            mode.$1,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w900,
+                              color: AppColors.dark,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            mode.$2,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.muted,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Container(
+                        width: 22,
+                        height: 22,
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? AppColors.teal
+                              : Colors.transparent,
+                          border: Border.all(
+                            color: isSelected
+                                ? AppColors.teal
+                                : AppColors.dark,
+                            width: 2.5,
+                          ),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        alignment: Alignment.center,
+                        child: isSelected
+                            ? const Text(
+                                '\u2713',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : null,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final connectionState = ref.watch(connectionStateProvider);
-    final trainerData = ref.watch(trainerDataProvider);
     final hrConnectionState = ref.watch(hrConnectionStateProvider);
-    final hrData = ref.watch(hrDataProvider);
+
+    final trainerConnected = connectionState.whenOrNull(
+          data: (s) => s == TrainerConnectionState.connected,
+        ) ??
+        false;
+    final trainerConnecting = connectionState.whenOrNull(
+          data: (s) => s == TrainerConnectionState.connecting,
+        ) ??
+        false;
+
+    final hrConnected = hrConnectionState.whenOrNull(
+          data: (s) => s == HrConnectionState.connected,
+        ) ??
+        false;
+    final hrConnecting = hrConnectionState.whenOrNull(
+          data: (s) => s == HrConnectionState.connecting,
+        ) ??
+        false;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('FTP Ramp Test'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-      ),
-      body: Column(
-        children: [
-          // Connection status card
-          connectionState.when(
-            data: (state) => _ConnectionStatusCard(
-              state: state,
-              trainerData: trainerData.value,
-              hrState: hrConnectionState.value,
-              hrData: hrData.value,
-              onDisconnect: () {
-                ref.read(trainerRepositoryProvider).disconnect();
-              },
-              onDisconnectHr: () {
-                ref.read(hrRepositoryProvider).disconnect();
-              },
-            ),
-            loading: () => const SizedBox.shrink(),
-            error: (_, _) => const SizedBox.shrink(),
+      backgroundColor: AppColors.bg,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.screenSide,
+            AppSpacing.lg,
+            AppSpacing.screenSide,
+            AppSpacing.screenBottom,
           ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Logo
+              _buildLogo(),
+              const SizedBox(height: 22),
 
-          // Start Ramp Test button (visible when connected)
-          connectionState.when(
-            data: (state) {
-              if (state == TrainerConnectionState.connected) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton.icon(
-                      onPressed: () => context.go('/ramp-test'),
-                      icon: const Icon(Icons.play_arrow),
-                      label: const Text(
-                        'Start Ramp Test',
-                        style: TextStyle(fontSize: 18),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
-                  ),
-                );
-              }
-              return const SizedBox.shrink();
-            },
-            loading: () => const SizedBox.shrink(),
-            error: (_, _) => const SizedBox.shrink(),
-          ),
+              // Mode selector block
+              _buildModeSelector(),
 
-          // Error message
-          if (_errorMessage != null)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              color: Colors.red.shade100,
-              child: Text(
-                _errorMessage!,
-                style: TextStyle(color: Colors.red.shade900),
+              // Pairing block
+              _buildPairingBlock(
+                trainerConnected: trainerConnected,
+                trainerConnecting: trainerConnecting,
+                hrConnected: hrConnected,
+                hrConnecting: hrConnecting,
               ),
-            ),
 
-          // Scan button
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _isScanning ? _stopScan : _startScan,
-                icon: _isScanning
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.bluetooth_searching),
-                label: Text(_isScanning ? 'Stop Scan' : 'Scan for Devices'),
-              ),
-            ),
-          ),
+              const Spacer(),
 
-          // Device list split by type
-          Expanded(
-            child: _devices.isEmpty
-                ? Center(
-                    child: Text(
-                      _isScanning
-                          ? 'Searching for devices...'
-                          : 'Tap "Scan" to find devices',
-                      style: Theme.of(context).textTheme.bodyLarge,
-                    ),
-                  )
-                : _buildDeviceSections(),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ConnectionStatusCard extends StatelessWidget {
-  final TrainerConnectionState state;
-  final TrainerData? trainerData;
-  final HrConnectionState? hrState;
-  final HrData? hrData;
-  final VoidCallback onDisconnect;
-  final VoidCallback onDisconnectHr;
-
-  const _ConnectionStatusCard({
-    required this.state,
-    required this.trainerData,
-    this.hrState,
-    this.hrData,
-    required this.onDisconnect,
-    required this.onDisconnectHr,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final showTrainer = state != TrainerConnectionState.disconnected;
-    final showHr = hrState != null &&
-        hrState != HrConnectionState.disconnected;
-
-    if (!showTrainer && !showHr) {
-      return const SizedBox.shrink();
-    }
-
-    return Card(
-      margin: const EdgeInsets.all(16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Trainer status
-            if (showTrainer) ...[
-              Row(
-                children: [
-                  Icon(
-                    state == TrainerConnectionState.connected
-                        ? Icons.bluetooth_connected
-                        : Icons.bluetooth_searching,
-                    color: state == TrainerConnectionState.connected
-                        ? Colors.green
-                        : Colors.orange,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    state == TrainerConnectionState.connected
-                        ? 'Trainer Connected'
-                        : state == TrainerConnectionState.connecting
-                            ? 'Connecting Trainer...'
-                            : 'Disconnecting...',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const Spacer(),
-                  if (state == TrainerConnectionState.connected)
-                    TextButton(
-                      onPressed: onDisconnect,
-                      child: const Text('Disconnect'),
-                    ),
-                ],
-              ),
-              if (state == TrainerConnectionState.connected &&
-                  trainerData != null) ...[
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _DataDisplay(
-                      label: 'Power',
-                      value: '${trainerData!.power}',
-                      unit: 'W',
-                    ),
-                    _DataDisplay(
-                      label: 'Cadence',
-                      value: '${trainerData!.cadence}',
-                      unit: 'rpm',
-                    ),
-                  ],
-                ),
-              ],
-            ],
-
-            // HR status
-            if (showHr) ...[
-              if (showTrainer) const Divider(height: 24),
-              Row(
-                children: [
-                  Icon(
-                    Icons.favorite,
-                    color: hrState == HrConnectionState.connected
-                        ? Colors.red
-                        : Colors.orange,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    hrState == HrConnectionState.connected
-                        ? 'HR: ${hrData?.heartRate ?? '--'} bpm'
-                        : hrState == HrConnectionState.connecting
-                            ? 'Connecting HR...'
-                            : 'Disconnecting HR...',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const Spacer(),
-                  if (hrState == HrConnectionState.connected)
-                    TextButton(
-                      onPressed: onDisconnectHr,
-                      child: const Text('Disconnect'),
-                    ),
-                ],
+              // Start Test button
+              AppButton(
+                label: 'Start Test',
+                variant: AppButtonVariant.primary,
+                prefixIcon: '\u25B6',
+                onPressed: trainerConnected
+                    ? () => context.go('/ramp-test')
+                    : null,
               ),
             ],
-          ],
+          ),
         ),
       ),
     );
   }
-}
 
-class _DataDisplay extends StatelessWidget {
-  final String label;
-  final String value;
-  final String unit;
-
-  const _DataDisplay({
-    required this.label,
-    required this.value,
-    required this.unit,
-  });
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildLogo() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall,
+        RichText(
+          text: const TextSpan(
+            style: TextStyle(
+              fontFamily: 'Iosevka',
+              fontSize: 52,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -2,
+              height: 0.92,
+            ),
+            children: [
+              TextSpan(
+                text: 'FTP',
+                style: TextStyle(color: AppColors.teal),
+              ),
+              TextSpan(
+                text: '.',
+                style: TextStyle(color: AppColors.pink),
+              ),
+              TextSpan(text: '\n'),
+              TextSpan(
+                text: 'TEST',
+                style: TextStyle(color: AppColors.teal),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 4),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
-          children: [
-            Text(
-              value,
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const SizedBox(width: 4),
-            Text(
-              unit,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ],
+        const SizedBox(height: 8),
+        const Text(
+          'POWER LAB',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            letterSpacing: 4,
+            color: Color(0xFFCCCCCC),
+          ),
         ),
       ],
     );
   }
-}
 
-class _SectionHeader extends StatelessWidget {
-  final IconData icon;
-  final String label;
-
-  const _SectionHeader({required this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-      child: Row(
-        children: [
-          Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.bold,
+  Widget _buildModeSelector() {
+    return GestureDetector(
+      onTap: _showModeSelector,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        decoration: BoxDecoration(
+          border: Border.all(color: AppColors.dark, width: 3),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+              color: AppColors.teal,
+              child: const Text(
+                'SELECT MODE',
+                style: TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 2,
+                  color: Colors.white,
                 ),
+              ),
+            ),
+            Container(
+              color: AppColors.card,
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    _selectedMode,
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -1,
+                      color: AppColors.dark,
+                    ),
+                  ),
+                  const Text(
+                    '\u203A',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: AppColors.muted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPairingBlock({
+    required bool trainerConnected,
+    required bool trainerConnecting,
+    required bool hrConnected,
+    required bool hrConnecting,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        border: Border.all(color: AppColors.dark, width: 3),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+            color: AppColors.pink,
+            child: const Text(
+              'PAIRING',
+              style: TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 2,
+                color: Colors.white,
+              ),
+            ),
+          ),
+          // Trainer row
+          Container(
+            color: AppColors.card,
+            child: Column(
+              children: [
+                _buildPairRow(
+                  icon: const IconBox.trainer(),
+                  name: 'Trainer',
+                  isConnected: trainerConnected,
+                  isConnecting: trainerConnecting,
+                  onTap: trainerConnected
+                      ? () => ref.read(trainerRepositoryProvider).disconnect()
+                      : () => _showDeviceSheet(forHr: false),
+                ),
+                Container(
+                  height: 2,
+                  color: AppColors.borderLight,
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                ),
+                _buildPairRow(
+                  icon: const IconBox.hr(),
+                  name: 'Heart Rate',
+                  isConnected: hrConnected,
+                  isConnecting: hrConnecting,
+                  onTap: hrConnected
+                      ? () => ref.read(hrRepositoryProvider).disconnect()
+                      : () => _showDeviceSheet(forHr: true),
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
-}
 
-class _DeviceTile extends StatelessWidget {
-  final ScannedDevice device;
-  final IconData icon;
-  final bool isConnecting;
-  final VoidCallback onTap;
-
-  const _DeviceTile({
-    required this.device,
-    required this.icon,
-    required this.isConnecting,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(icon),
-      title: Text(device.name),
-      subtitle: Text(device.id),
-      trailing: isConnecting
-          ? const SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : const Icon(Icons.chevron_right),
-      onTap: isConnecting ? null : onTap,
+  Widget _buildPairRow({
+    required Widget icon,
+    required String name,
+    required bool isConnected,
+    required bool isConnecting,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+        child: Row(
+          children: [
+            icon,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.dark,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    isConnected
+                        ? '\u25CF Connected'
+                        : isConnecting
+                            ? '\u25CB Connecting...'
+                            : '\u25CB Tap to scan',
+                    style: TextStyle(
+                      fontSize: 9,
+                      letterSpacing: 1,
+                      color: isConnected ? AppColors.teal : AppColors.muted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (isConnecting)
+              const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.teal,
+                ),
+              )
+            else
+              TagWidget(isOn: isConnected),
+          ],
+        ),
+      ),
     );
   }
 }

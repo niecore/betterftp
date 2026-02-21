@@ -3,6 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../shared/widgets/app_button.dart';
+import '../../../shared/widgets/phase_badge.dart';
+import '../../../shared/widgets/stat_card.dart';
 import '../domain/ramp_test_state.dart';
 import 'ramp_test_controller.dart';
 
@@ -26,241 +31,341 @@ class _RampTestScreenState extends ConsumerState<RampTestScreen> {
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 
-  String _phaseLabel(RampTestPhase phase) {
-    switch (phase) {
-      case RampTestPhase.idle:
-        return 'Ready';
-      case RampTestPhase.warmup:
-        return 'Warm Up';
-      case RampTestPhase.ramping:
-        return 'Ramping';
-      case RampTestPhase.completed:
-        return 'Completed';
-      case RampTestPhase.failed:
-        return 'Failed';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(rampTestControllerProvider);
     final controller = ref.read(rampTestControllerProvider.notifier);
 
-    // Navigate to results when completed
     ref.listen(rampTestControllerProvider, (previous, next) {
-      if (next.phase == RampTestPhase.completed && previous?.phase != RampTestPhase.completed) {
+      if (next.phase == RampTestPhase.completed &&
+          previous?.phase != RampTestPhase.completed) {
         context.go('/results', extra: next);
       }
     });
 
+    final isRunning =
+        state.phase == RampTestPhase.warmup ||
+        state.phase == RampTestPhase.ramping;
+    final isWarmup = state.phase == RampTestPhase.warmup;
+    final progress = state.elapsedSeconds > 0
+        ? (state.elapsedSeconds / 1200).clamp(0.0, 1.0)
+        : 0.0;
+    final progressPct = (progress * 100).round();
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Ramp Test'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // Phase indicator
-            Card(
-              color: _phaseColor(state.phase, context),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-                child: Text(
-                  _phaseLabel(state.phase),
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Main data display
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+      backgroundColor: AppColors.bg,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.screenSide,
+            AppSpacing.lg,
+            AppSpacing.screenSide,
+            AppSpacing.screenBottom,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Title bar with phase badge
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Current power (large)
-                  Text(
-                    '${state.currentPower}',
-                    style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 80,
-                        ),
+                  const Text(
+                    'Test Running',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.dark,
+                      letterSpacing: -0.5,
+                    ),
                   ),
-                  Text(
-                    'watts',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: Colors.grey,
-                        ),
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Target power and cadence
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _MetricTile(
-                        label: 'Target',
-                        value: '${state.targetPower}',
-                        unit: 'W',
-                      ),
-                      _MetricTile(
-                        label: 'Cadence',
-                        value: '${state.currentCadence}',
-                        unit: 'rpm',
-                      ),
-                      if (state.currentHeartRate != null)
-                        _MetricTile(
-                          label: 'HR',
-                          value: '${state.currentHeartRate}',
-                          unit: 'bpm',
-                        ),
-                      if (state.phase == RampTestPhase.ramping)
-                        _MetricTile(
-                          label: 'Stage',
-                          value: '${state.currentStage + 1}',
-                          unit: '',
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Timers
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _MetricTile(
-                        label: 'Total Time',
-                        value: _formatTime(state.elapsedSeconds),
-                        unit: '',
-                      ),
-                      _MetricTile(
-                        label: state.phase == RampTestPhase.warmup
-                            ? 'Warmup Left'
-                            : 'Stage Time',
-                        value: state.phase == RampTestPhase.warmup
-                            ? _formatTime((300 - state.stageElapsedSeconds).toInt())
-                            : _formatTime(state.stageElapsedSeconds),
-                        unit: '',
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Best 1-min avg
-                  if (state.bestOneMinAvgPower > 0)
-                    Text(
-                      'Best 1-min avg: ${state.bestOneMinAvgPower.round()}W',
-                      style: Theme.of(context).textTheme.bodyLarge,
+                  if (isRunning)
+                    PhaseBadge(
+                      phase: isWarmup ? Phase.warmup : Phase.testing,
                     ),
                 ],
               ),
-            ),
+              const SizedBox(height: 16),
 
-            // Start/Stop buttons
-            SafeArea(
-              child: SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: state.phase == RampTestPhase.idle
-                    ? ElevatedButton(
-                        onPressed: () {
-                          WakelockPlus.enable();
-                          controller.start();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
-                        ),
-                        child: const Text(
-                          'Start Test',
-                          style: TextStyle(fontSize: 20),
-                        ),
-                      )
-                    : ElevatedButton(
-                        onPressed: () {
-                          WakelockPlus.disable();
-                          controller.stop();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          foregroundColor: Colors.white,
-                        ),
-                        child: const Text(
-                          'Stop Test',
-                          style: TextStyle(fontSize: 20),
+              // Timer block
+              Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: AppColors.dark, width: 3),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 10,
+                        horizontal: 16,
+                      ),
+                      color: AppColors.teal,
+                      width: double.infinity,
+                      child: const Row(
+                        children: [
+                          Text(
+                            '\u23F1',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.white,
+                            ),
+                          ),
+                          SizedBox(width: 6),
+                          Text(
+                            'ELAPSED TIME',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 2,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      color: AppColors.card,
+                      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+                      width: double.infinity,
+                      child: Column(
+                        children: [
+                          Text(
+                            _formatTime(state.elapsedSeconds),
+                            style: const TextStyle(
+                              fontSize: 52,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -2,
+                              height: 1,
+                              color: AppColors.dark,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'of ~20:00 est.',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: AppColors.muted,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // Warmup bar (only during warmup)
+              if (isWarmup)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 12,
+                    horizontal: 16,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.card,
+                    border: Border.all(color: AppColors.dark, width: 3),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          const Text(
+                            'WARMUP',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1,
+                              color: AppColors.muted,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          RichText(
+                            text: TextSpan(
+                              style: const TextStyle(fontFamily: 'Iosevka'),
+                              children: [
+                                TextSpan(
+                                  text: '${state.targetPower}',
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w900,
+                                    color: AppColors.dark,
+                                  ),
+                                ),
+                                const TextSpan(
+                                  text: ' W',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: AppColors.muted,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      GestureDetector(
+                        onTap: () => controller.skipWarmup(),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 6,
+                            horizontal: 14,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.dark,
+                            border: Border.all(color: AppColors.dark, width: 2),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text(
+                            'SKIP \u203A\u203A',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1,
+                              color: Colors.white,
+                            ),
+                          ),
                         ),
                       ),
+                    ],
+                  ),
+                ),
+
+              // 2x2 stat grid
+              Row(
+                children: [
+                  Expanded(
+                    child: StatCard(
+                      type: StatCardType.power,
+                      value: '${state.currentPower}',
+                      unit: 'Watts',
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: StatCard(
+                      type: StatCardType.hr,
+                      value: '${state.currentHeartRate ?? '--'}',
+                      unit: 'BPM',
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: StatCard(
+                      type: StatCardType.cadence,
+                      value: '${state.currentCadence}',
+                      unit: 'RPM',
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: StatCard(
+                      type: StatCardType.speed,
+                      value: '${state.currentStage + 1}',
+                      unit: 'STAGE',
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+
+              // Progress bar
+              Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'PROGRESS',
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1,
+                          color: AppColors.muted,
+                        ),
+                      ),
+                      Text(
+                        '$progressPct%',
+                        style: const TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1,
+                          color: AppColors.muted,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 5),
+                  Container(
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE8E5E0),
+                      border: Border.all(color: AppColors.dark, width: 2),
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: FractionallySizedBox(
+                        widthFactor: progress.toDouble(),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: AppColors.teal,
+                            borderRadius: BorderRadius.circular(3),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const Spacer(),
+
+              // Buttons
+              if (state.phase == RampTestPhase.idle) ...[
+                AppButton(
+                  label: 'Start Test',
+                  variant: AppButtonVariant.primary,
+                  prefixIcon: '\u25B6',
+                  onPressed: () {
+                    WakelockPlus.enable();
+                    controller.start();
+                  },
+                ),
+              ] else if (isRunning) ...[
+                AppButton(
+                  label: 'Stop Test',
+                  variant: AppButtonVariant.pink,
+                  prefixIcon: '\u25A0',
+                  onPressed: () {
+                    WakelockPlus.disable();
+                    controller.stop();
+                  },
+                ),
+                const SizedBox(height: 8),
+                AppButton(
+                  label: 'Finish & Calculate',
+                  variant: AppButtonVariant.outline,
+                  onPressed: () {
+                    WakelockPlus.disable();
+                    controller.stop();
+                  },
+                ),
+              ],
+            ],
+          ),
         ),
       ),
-    );
-  }
-
-  Color _phaseColor(RampTestPhase phase, BuildContext context) {
-    switch (phase) {
-      case RampTestPhase.idle:
-        return Colors.grey;
-      case RampTestPhase.warmup:
-        return Colors.orange;
-      case RampTestPhase.ramping:
-        return Colors.blue;
-      case RampTestPhase.completed:
-        return Colors.green;
-      case RampTestPhase.failed:
-        return Colors.red;
-    }
-  }
-}
-
-class _MetricTile extends StatelessWidget {
-  final String label;
-  final String value;
-  final String unit;
-
-  const _MetricTile({
-    required this.label,
-    required this.value,
-    required this.unit,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.grey,
-              ),
-        ),
-        const SizedBox(height: 4),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
-          children: [
-            Text(
-              value,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            if (unit.isNotEmpty) ...[
-              const SizedBox(width: 4),
-              Text(
-                unit,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ],
-          ],
-        ),
-      ],
     );
   }
 }
