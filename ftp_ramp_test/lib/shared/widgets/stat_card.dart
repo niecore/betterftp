@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
 
-enum StatCardType { power, hr, cadence, speed }
+enum StatCardType { power, hr, cadence }
 
 class StatCard extends StatelessWidget {
   final StatCardType type;
@@ -20,21 +20,18 @@ class StatCard extends StatelessWidget {
         StatCardType.power => AppColors.teal,
         StatCardType.hr => AppColors.pink,
         StatCardType.cadence => AppColors.tealDark,
-        StatCardType.speed => AppColors.dark,
       };
 
   String get _label => switch (type) {
         StatCardType.power => 'POWER',
         StatCardType.hr => 'HEART RATE',
         StatCardType.cadence => 'CADENCE',
-        StatCardType.speed => 'SPEED',
       };
 
   String get _icon => switch (type) {
         StatCardType.power => '\u26A1',
         StatCardType.hr => '\u2665',
         StatCardType.cadence => '\u27F3',
-        StatCardType.speed => '\u25CE',
       };
 
   @override
@@ -44,8 +41,9 @@ class StatCard extends StatelessWidget {
         border: Border.all(color: AppColors.dark, width: 3),
         borderRadius: BorderRadius.circular(14),
       ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(11),
+        child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -101,6 +99,7 @@ class StatCard extends StatelessWidget {
             ),
           ),
         ],
+        ),
       ),
     );
   }

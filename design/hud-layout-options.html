@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FTP.TEST — HUD Layout Options</title>
+<style>
+  @font-face { font-family: 'Iosevka'; font-style: normal; font-display: swap; font-weight: 400;
+    src: url(https://cdn.jsdelivr.net/fontsource/fonts/iosevka@latest/latin-400-normal.woff2) format('woff2'); }
+  @font-face { font-family: 'Iosevka'; font-style: normal; font-display: swap; font-weight: 500;
+    src: url(https://cdn.jsdelivr.net/fontsource/fonts/iosevka@latest/latin-500-normal.woff2) format('woff2'); }
+  @font-face { font-family: 'Iosevka'; font-style: normal; font-display: swap; font-weight: 700;
+    src: url(https://cdn.jsdelivr.net/fontsource/fonts/iosevka@latest/latin-700-normal.woff2) format('woff2'); }
+  @font-face { font-family: 'Iosevka'; font-style: normal; font-display: swap; font-weight: 900;
+    src: url(https://cdn.jsdelivr.net/fontsource/fonts/iosevka@latest/latin-900-normal.woff2) format('woff2'); }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --teal: #0D9488;
+    --teal-dark: #0F766E;
+    --teal-bg: rgba(13,148,136,0.06);
+    --teal-light: #5EEAD4;
+    --pink: #EC4899;
+    --pink-dark: #DB2777;
+    --pink-bg: rgba(236,72,153,0.06);
+    --yellow: #FACC15;
+    --yellow-deep: #EAB308;
+    --dark: #1a1a1a;
+    --bg: #F5F5F0;
+    --card: #fff;
+    --muted: #aaa;
+    --border-light: #f0f0f0;
+    --font: 'Iosevka', monospace;
+  }
+
+  body {
+    background: #E8E4DF;
+    font-family: var(--font);
+    padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 40px;
+  }
+
+  h1 { font-size: 32px; font-weight: 900; color: var(--teal); letter-spacing: -2px; text-align: center; }
+  h1 .dot { color: var(--pink); }
+  .page-sub { font-size: 11px; font-weight: 500; letter-spacing: 4px; text-transform: uppercase; color: #ccc; text-align: center; margin-top: 4px; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; max-width: 850px; }
+
+  .option-wrap { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .option-label { font-size: 13px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; color: var(--dark); padding: 5px 14px; border: 3px solid var(--dark); border-radius: 8px; background: var(--card); }
+  .option-desc { font-size: 10px; color: var(--muted); letter-spacing: 1px; max-width: 375px; text-align: center; line-height: 1.4; }
+  /* Section order legend */
+  .option-order { font-size: 9px; font-weight: 700; letter-spacing: 1px; color: var(--teal); background: var(--teal-bg); border: 1.5px solid var(--teal); border-radius: 4px; padding: 3px 8px; }
+
+  .phone-frame { width: 375px; height: 720px; border-radius: 44px; overflow: hidden; position: relative; background: var(--bg); box-shadow: 0 25px 80px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.05); }
+  .screen { padding: 52px 22px 32px; display: flex; flex-direction: column; min-height: 100%; }
+  .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .screen-title { font-size: 20px; font-weight: 900; color: var(--dark); letter-spacing: -0.5px; }
+  .phase-badge { font-size: 10px; font-weight: 700; padding: 5px 12px; border-radius: 6px; letter-spacing: 1px; text-transform: uppercase; border: 2px solid; background: var(--teal-bg); color: var(--teal); border-color: var(--teal); display: flex; align-items: center; }
+  @keyframes blink-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+  .live-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--teal-light); animation: blink-dot 1.5s ease-in-out infinite; margin-right: 6px; }
+
+  .btn { border: 3px solid; border-radius: 14px; padding: 17px; width: 100%; font-family: var(--font); font-size: 14px; font-weight: 900; cursor: pointer; letter-spacing: -0.3px; transition: all 0.2s; text-align: center; }
+  .btn-pink { background: var(--pink); border-color: var(--pink); color: #fff; }
+  .btn-outline { background: transparent; border-color: var(--dark); color: var(--dark); font-weight: 700; }
+  .spacer { flex: 1; }
+
+  /* HUD shared */
+  .hud { border: 3px solid var(--dark); border-radius: 14px; overflow: hidden; margin-bottom: 10px; background: var(--card); }
+  .hud-header { background: var(--teal); padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; }
+  .hud-header-stage { font-size: 9px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #fff; }
+
+  /* Interval section */
+  .hud-interval { padding: 12px 16px 14px; border-bottom: 2px solid var(--border-light); }
+  .hud-interval-times { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .hud-time-block { text-align: center; }
+  .hud-time-label { font-size: 8px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
+  .hud-time-val { font-size: 20px; font-weight: 900; letter-spacing: -1px; color: var(--dark); line-height: 1; }
+  .hud-time-val.done { color: var(--muted); }
+  .hud-segments { display: flex; gap: 3px; height: 14px; }
+  .hud-seg { flex: 1; border-radius: 3px; background: #e8e5e0; border: 2px solid var(--dark); overflow: hidden; position: relative; }
+  .hud-seg.done { background: var(--teal); border-color: var(--teal-dark); }
+  .hud-seg.active { border-color: var(--teal); }
+  .hud-seg-fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--teal); border-radius: 1px; }
+  .hud-seg.future { opacity: 0.3; }
+
+  /* Power section */
+  .hud-power { padding: 20px 20px 16px; text-align: center; border-bottom: 2px solid var(--border-light); position: relative; }
+  .hud-power-val { font-size: 72px; font-weight: 900; letter-spacing: -3px; color: var(--dark); line-height: 0.85; }
+  .hud-power-unit { font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
+  .hud-power-delta { position: absolute; top: 16px; right: 16px; font-size: 12px; font-weight: 900; padding: 3px 8px; border-radius: 4px; border: 2px solid; }
+  .hud-power-delta.over { background: var(--teal-bg); color: var(--teal); border-color: var(--teal); }
+  .hud-power-target { position: absolute; top: 16px; left: 16px; }
+  .hud-power-target-label { font-size: 8px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
+  .hud-power-target-val { font-size: 14px; font-weight: 900; color: var(--teal); letter-spacing: -0.5px; }
+
+  /* HR + Cadence row */
+  .hud-row { display: flex; }
+  .hud-cell { flex: 1; padding: 14px 16px; display: flex; align-items: center; gap: 12px; }
+  .hud-cell + .hud-cell { border-left: 2px solid var(--border-light); }
+  .hud-cell-icon { width: 32px; height: 32px; border: 2.5px solid var(--dark); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; }
+  .hud-cell-data { display: flex; flex-direction: column; }
+  .hud-cell-val { font-size: 26px; font-weight: 900; letter-spacing: -1px; color: var(--dark); line-height: 1; }
+  .hud-cell-label { font-size: 8px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-top: 2px; }
+
+  /* Stepped progress footer */
+  .hud-steps { padding: 10px 16px 12px; border-top: 2px solid var(--border-light); }
+  /* When steps is NOT last (has border-bottom instead of border-top) */
+  .hud-steps.mid { border-top: none; border-bottom: 2px solid var(--border-light); }
+  .hud-steps-label { font-size: 8px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; display: flex; justify-content: space-between; }
+  .hud-steps-label-val { color: var(--dark); }
+  .hud-steps-blocks { display: flex; gap: 2px; height: 10px; }
+  .hud-step { flex: 1; border-radius: 2px; background: #e8e5e0; border: 1.5px solid #ccc; transition: all 0.4s ease; }
+  .hud-step.done { background: var(--teal); border-color: var(--teal-dark); }
+  .hud-step.current { background: var(--teal-bg); border-color: var(--teal); }
+  .hud-step.future { opacity: 0.35; }
+
+  /* When data row is last child (no bottom border needed on power) */
+  .hud-power.last { border-bottom: none; }
+  .hud-row.bordered { border-bottom: 2px solid var(--border-light); }
+
+  /* Summary pills */
+  .hud-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; justify-content: space-evenly; }
+  .hud-pill { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border: 2px solid var(--border-light); border-radius: 6px; background: var(--card); white-space: nowrap; }
+  .hud-pill-label { font-size: 8px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+  .hud-pill-val { font-size: 11px; font-weight: 900; color: var(--dark); letter-spacing: -0.3px; }
+</style>
+</head>
+<body>
+
+<div>
+  <h1>FTP<span class="dot">.</span>TEST</h1>
+  <div class="page-sub">HUD Section Order</div>
+</div>
+
+<div class="grid">
+
+  <!-- ========== OPTION 1 — CURRENT ORDER ========== -->
+  <div class="option-wrap">
+    <div class="option-label">1 — Current</div>
+    <div class="option-order">Interval → Power → Vitals → Progress</div>
+    <div class="option-desc">Current layout. Interval timing on top, power hero center, vitals below, workout progress at bottom.</div>
+    <div class="phone-frame">
+      <div class="screen">
+        <div class="top-bar">
+          <div class="screen-title">Ramp Test</div>
+          <div class="phase-badge"><span class="live-dot"></span>Live</div>
+        </div>
+        <div class="hud">
+          <div class="hud-header"><span class="hud-header-stage" id="s1-stage">Stage 4 — 180W</span></div>
+          <!-- 1: Interval -->
+          <div class="hud-interval">
+            <div class="hud-interval-times">
+              <div class="hud-time-block"><div class="hud-time-label">Done</div><div class="hud-time-val done" id="s1-done">0:38</div></div>
+              <div class="hud-time-block"><div class="hud-time-label">Left</div><div class="hud-time-val" id="s1-left">0:22</div></div>
+            </div>
+            <div class="hud-segments" id="s1-segments"></div>
+          </div>
+          <!-- 2: Power -->
+          <div class="hud-power">
+            <div class="hud-power-target"><div class="hud-power-target-label">Target</div><div class="hud-power-target-val">180W</div></div>
+            <div class="hud-power-val" id="s1-power">185</div>
+            <div class="hud-power-unit">Watts</div>
+            <div class="hud-power-delta over" id="s1-delta">+5</div>
+          </div>
+          <!-- 3: Vitals -->
+          <div class="hud-row">
+            <div class="hud-cell"><div class="hud-cell-icon" style="background:#FCE7F3;">♥</div><div class="hud-cell-data"><div class="hud-cell-val" id="s1-hr">148</div><div class="hud-cell-label">Heart Rate • BPM</div></div></div>
+            <div class="hud-cell"><div class="hud-cell-icon" style="background:#F0FDF4;">⟳</div><div class="hud-cell-data"><div class="hud-cell-val" id="s1-cad">88</div><div class="hud-cell-label">Cadence • RPM</div></div></div>
+          </div>
+          <!-- 4: Workout progress -->
+          <div class="hud-steps">
+            <div class="hud-steps-label"><span>Test Progress</span><span class="hud-steps-label-val" id="s1-prog-text">Stage 4 / 15</span></div>
+            <div class="hud-steps-blocks" id="s1-prog-blocks"></div>
+          </div>
+        </div>
+        <div class="hud-pills">
+          <div class="hud-pill"><span class="hud-pill-label">Time</span><span class="hud-pill-val" id="s1-elapsed">08:38</span></div>
+          <div class="hud-pill"><span class="hud-pill-label">Avg W</span><span class="hud-pill-val">172</span></div>
+          <div class="hud-pill"><span class="hud-pill-label">Avg HR</span><span class="hud-pill-val">138</span></div>
+          <div class="hud-pill"><span class="hud-pill-label">Max HR</span><span class="hud-pill-val">152</span></div>
+          <div class="hud-pill"><span class="hud-pill-label">Eff</span><span class="hud-pill-val">96%</span></div>
+        </div>
+        <div class="spacer"></div>
+        <button class="btn btn-pink" style="margin-bottom:8px;">■ Stop Test</button>
+        <button class="btn btn-outline">Finish & Calculate</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== OPTION 2 — POWER FIRST ========== -->
+  <div class="option-wrap">
+    <div class="option-label">2 — Power First</div>
+    <div class="option-order">Power → Interval → Vitals → Progress</div>
+    <div class="option-desc">Power is the hero at the top. Interval timing below. Most important metric gets prime real estate.</div>
+    <div class="phone-frame">
+      <div class="screen">
+        <div class="top-bar">
+          <div class="screen-title">Ramp Test</div>
+          <div class="phase-badge"><span class="live-dot"></span>Live</div>
+        </div>
+        <div class="hud">
+          <div class="hud-header"><span class="hud-header-stage" id="s2-stage">Stage 4 — 180W</span></div>
+          <!-- 1: Power -->
+          <div class="hud-power">
+            <div class="hud-power-target"><div class="hud-power-target-label">Target</div><div class="hud-power-target-val">180W</div></div>
+            <div class="hud-power-val" id="s2-power">185</div>
+            <div class="hud-power-unit">Watts</div>
+            <div class="hud-power-delta over" id="s2-delta">+5</div>
+          </div>
+          <!-- 2: Interval -->
+          <div class="hud-interval">
+            <div class="hud-interval-times">
+              <div class="hud-time-block"><div class="hud-time-label">Done</div><div class="hud-time-val done" id="s2-done">0:38</div></div>
+              <div class="hud-time-block"><div class="hud-time-label">Left</div><div class="hud-time-val" id="s2-left">0:22</div></div>
+            </div>
+            <div class="hud-segments" id="s2-segments"></div>
+          </div>
+          <!-- 3: Vitals -->
+          <div class="hud-row">
+            <div class="hud-cell"><div class="hud-cell-icon" style="background:#FCE7F3;">♥</div><div class="hud-cell-data"><div class="hud-cell-val" id="s2-hr">148</div><div class="hud-cell-label">Heart Rate • BPM</div></div></div>
+            <div class="hud-cell"><div class="hud-cell-icon" style="background:#F0FDF4;">⟳</div><div class="hud-cell-data"><div class="hud-cell-val" id="s2-cad">88</div><div class="hud-cell-label">Cadence • RPM</div></div></div>
+          </div>
+          <!-- 4: Workout progress -->
+          <div class="hud-steps">
+            <div class="hud-steps-label"><span>Test Progress</span><span class="hud-steps-label-val" id="s2-prog-text">Stage 4 / 15</span></div>
+            <div class="hud-steps-blocks" id="s2-prog-blocks"></div>
+          </div>
+        </div>
+        <div class="hud-pills">
+          <div class="hud-pill"><span class="hud-pill-label">Time</span><span class="hud-pill-val" id="s2-elapsed">08:38</span></div>
+          <div class="hud-pill"><span class="hud-pill-label">Avg W</span><span class="hud-pill-val">172</span></div>
+          <div class="hud-pill"><span class="hud-pill-label">Avg HR</span><span class="hud-pill-val">138</span></div>
+          <div class="hud-pill"><span class="hud-pill-label">Max HR</span><span class="hud-pill-val">152</span></div>
+          <div class="hud-pill"><span class="hud-pill-label">Eff</span><span class="hud-pill-val">96%</span></div>
+        </div>
+        <div class="spacer"></div>
+        <button class="btn btn-pink" style="margin-bottom:8px;">■ Stop Test</button>
+        <button class="btn btn-outline">Finish & Calculate</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== OPTION 3 — PROGRESS GROUPED ========== -->
+  <div class="option-wrap">
+    <div class="option-label">3 — Progress Up</div>
+    <div class="option-order">Interval → Progress → Power → Vitals</div>
+    <div class="option-desc">Both progress indicators stacked together. Interval + workout progress at top, then power and vitals below.</div>
+    <div class="phone-frame">
+      <div class="screen">
+        <div class="top-bar">
+          <div class="screen-title">Ramp Test</div>
+          <div class="phase-badge"><span class="live-dot"></span>Live</div>
+        </div>
+        <div class="hud">
+          <div class="hud-header"><span class="hud-header-stage" id="s3-stage">Stage 4 — 180W</span></div>
+          <!-- 1: Interval -->
+          <div class="hud-interval">
+            <div class="hud-interval-times">
+              <div class="hud-time-block"><div class="hud-time-label">Done</div><div class="hud-time-val done" id="s3-done">0:38</div></div>
+              <div class="hud-time-block"><div class="hud-time-label">Left</div><div class="hud-time-val" id="s3-left">0:22</div></div>
+            </div>
+            <div class="hud-segments" id="s3-segments"></div>
+          </div>
+          <!-- 2: Workout progress (grouped with interval) -->
+          <div class="hud-steps mid">
+            <div class="hud-steps-label"><span>Test Progress</span><span class="hud-steps-label-val" id="s3-prog-text">Stage 4 / 15</span></div>
+            <div class="hud-steps-blocks" id="s3-prog-blocks"></div>
+          </div>
+          <!-- 3: Power -->
+          <div class="hud-power">
+            <div class="hud-power-target"><div class="hud-power-target-label">Target</div><div class="hud-power-target-val">180W</div></div>
+            <div class="hud-power-val" id="s3-power">185</div>
+            <div class="hud-power-unit">Watts</div>
+            <div class="hud-power-delta over" id="s3-delta">+5</div>
+          </div>
+          <!-- 4: Vitals -->
+          <div class="hud-row">
+            <div class="hud-cell"><div class="hud-cell-icon" style="background:#FCE7F3;">♥</div><div class="hud-cell-data"><div class="hud-cell-val" id="s3-hr">148</div><div class="hud-cell-label">Heart Rate • BPM</div></div></div>
+            <div class="hud-cell"><div class="hud-cell-icon" style="background:#F0FDF4;">⟳</div><div class="hud-cell-data"><div class="hud-cell-val" id="s3-cad">88</div><div class="hud-cell-label">Cadence • RPM</div></div></div>
+          </div>
+        </div>
+        <div class="hud-pills">
+          <div class="hud-pill"><span class="hud-pill-label">Time</span><span class="hud-pill-val" id="s3-elapsed">08:38</span></div>
+          <div class="hud-pill"><span class="hud-pill-label">Avg W</span><span class="hud-pill-val">172</span></div>
+          <div class="hud-pill"><span class="hud-pill-label">Avg HR</span><span class="hud-pill-val">138</span></div>
+          <div class="hud-pill"><span class="hud-pill-label">Max HR</span><span class="hud-pill-val">152</span></div>
+          <div class="hud-pill"><span class="hud-pill-label">Eff</span><span class="hud-pill-val">96%</span></div>
+        </div>
+        <div class="spacer"></div>
+        <button class="btn btn-pink" style="margin-bottom:8px;">■ Stop Test</button>
+        <button class="btn btn-outline">Finish & Calculate</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== OPTION 4 — POWER + VITALS FIRST ========== -->
+  <div class="option-wrap">
+    <div class="option-label">4 — Vitals First</div>
+    <div class="option-order">Power → Vitals → Interval → Progress</div>
+    <div class="option-desc">All live body data up top (power, HR, cadence). Timing and progress at the bottom. Focus on the rider.</div>
+    <div class="phone-frame">
+      <div class="screen">
+        <div class="top-bar">
+          <div class="screen-title">Ramp Test</div>
+          <div class="phase-badge"><span class="live-dot"></span>Live</div>
+        </div>
+        <div class="hud">
+          <div class="hud-header"><span class="hud-header-stage" id="s4-stage">Stage 4 — 180W</span></div>
+          <!-- 1: Power -->
+          <div class="hud-power">
+            <div class="hud-power-target"><div class="hud-power-target-label">Target</div><div class="hud-power-target-val">180W</div></div>
+            <div class="hud-power-val" id="s4-power">185</div>
+            <div class="hud-power-unit">Watts</div>
+            <div class="hud-power-delta over" id="s4-delta">+5</div>
+          </div>
+          <!-- 2: Vitals -->
+          <div class="hud-row bordered">
+            <div class="hud-cell"><div class="hud-cell-icon" style="background:#FCE7F3;">♥</div><div class="hud-cell-data"><div class="hud-cell-val" id="s4-hr">148</div><div class="hud-cell-label">Heart Rate • BPM</div></div></div>
+            <div class="hud-cell"><div class="hud-cell-icon" style="background:#F0FDF4;">⟳</div><div class="hud-cell-data"><div class="hud-cell-val" id="s4-cad">88</div><div class="hud-cell-label">Cadence • RPM</div></div></div>
+          </div>
+          <!-- 3: Interval -->
+          <div class="hud-interval">
+            <div class="hud-interval-times">
+              <div class="hud-time-block"><div class="hud-time-label">Done</div><div class="hud-time-val done" id="s4-done">0:38</div></div>
+              <div class="hud-time-block"><div class="hud-time-label">Left</div><div class="hud-time-val" id="s4-left">0:22</div></div>
+            </div>
+            <div class="hud-segments" id="s4-segments"></div>
+          </div>
+          <!-- 4: Workout progress -->
+          <div class="hud-steps">
+            <div class="hud-steps-label"><span>Test Progress</span><span class="hud-steps-label-val" id="s4-prog-text">Stage 4 / 15</span></div>
+            <div class="hud-steps-blocks" id="s4-prog-blocks"></div>
+          </div>
+        </div>
+        <div class="hud-pills">
+          <div class="hud-pill"><span class="hud-pill-label">Time</span><span class="hud-pill-val" id="s4-elapsed">08:38</span></div>
+          <div class="hud-pill"><span class="hud-pill-label">Avg W</span><span class="hud-pill-val">172</span></div>
+          <div class="hud-pill"><span class="hud-pill-label">Avg HR</span><span class="hud-pill-val">138</span></div>
+          <div class="hud-pill"><span class="hud-pill-label">Max HR</span><span class="hud-pill-val">152</span></div>
+          <div class="hud-pill"><span class="hud-pill-label">Eff</span><span class="hud-pill-val">96%</span></div>
+        </div>
+        <div class="spacer"></div>
+        <button class="btn btn-pink" style="margin-bottom:8px;">■ Stop Test</button>
+        <button class="btn btn-outline">Finish & Calculate</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const totalStages = 15;
+  const intervalDuration = 60;
+  const numSegments = 20;
+  const ids = ['s1','s2','s3','s4'];
+
+  function fmtShort(s) { return Math.floor(s/60) + ':' + (s%60).toString().padStart(2,'0'); }
+  function fmt(s) { return Math.floor(s/60).toString().padStart(2,'0') + ':' + (s%60).toString().padStart(2,'0'); }
+  function randAround(b, r) { return b + Math.floor(Math.random()*r*2) - r; }
+
+  // Build interval segments + stepped blocks for all options
+  ids.forEach(id => {
+    const segC = document.getElementById(id + '-segments');
+    for (let i = 0; i < numSegments; i++) { const s = document.createElement('div'); s.className = 'hud-seg'; segC.appendChild(s); }
+    const blkC = document.getElementById(id + '-prog-blocks');
+    for (let i = 0; i < totalStages; i++) { const b = document.createElement('div'); b.className = 'hud-step' + (i < 3 ? ' done' : i === 3 ? ' current' : ' future'); blkC.appendChild(b); }
+  });
+
+  function updateSegs(containerId, filled) {
+    const segs = document.getElementById(containerId).children;
+    const fc = Math.floor((filled / intervalDuration) * numSegments);
+    const pp = ((filled / intervalDuration) * numSegments - fc) * 100;
+    for (let i = 0; i < segs.length; i++) {
+      segs[i].className = 'hud-seg'; segs[i].innerHTML = '';
+      if (i < fc) { segs[i].classList.add('done'); }
+      else if (i === fc) { segs[i].classList.add('active'); const f = document.createElement('div'); f.className = 'hud-seg-fill'; f.style.width = pp + '%'; segs[i].appendChild(f); }
+      else { segs[i].classList.add('future'); }
+    }
+  }
+
+  function updateBlocks(containerId, stageNum) {
+    const blocks = document.getElementById(containerId).children;
+    for (let i = 0; i < blocks.length; i++) {
+      blocks[i].className = 'hud-step' + (i < stageNum - 1 ? ' done' : i === stageNum - 1 ? ' current' : ' future');
+    }
+  }
+
+  let totalElapsed = 518, intervalSec = 38, targetPower = 180, stageNum = 4;
+
+  // Initial render
+  ids.forEach(id => updateSegs(id + '-segments', intervalSec));
+
+  setInterval(() => {
+    totalElapsed++; intervalSec++;
+    if (intervalSec >= intervalDuration) {
+      intervalSec = 0; stageNum++; targetPower += 20;
+      const label = 'Stage ' + stageNum + ' \u2014 ' + targetPower + 'W';
+      const progLabel = 'Stage ' + stageNum + ' / ' + totalStages;
+      ids.forEach(id => {
+        document.getElementById(id + '-stage').textContent = label;
+        updateBlocks(id + '-prog-blocks', stageNum);
+        document.getElementById(id + '-prog-text').textContent = progLabel;
+      });
+    }
+    const done = intervalSec, left = intervalDuration - intervalSec;
+    const power = randAround(targetPower, 12), hr = randAround(150, 5), cad = randAround(88, 4);
+    const delta = power - targetPower;
+    const deltaStr = delta >= 0 ? '+' + delta : '' + delta;
+    const deltaClass = 'hud-power-delta ' + (delta >= 0 ? 'over' : 'under');
+
+    ids.forEach(id => {
+      updateSegs(id + '-segments', done);
+      document.getElementById(id + '-done').textContent = fmtShort(done);
+      document.getElementById(id + '-left').textContent = fmtShort(left);
+      document.getElementById(id + '-power').textContent = power;
+      document.getElementById(id + '-hr').textContent = hr;
+      document.getElementById(id + '-cad').textContent = cad;
+      document.getElementById(id + '-elapsed').textContent = fmt(totalElapsed);
+      const d = document.getElementById(id + '-delta'); d.textContent = deltaStr; d.className = deltaClass;
+    });
+  }, 1000);
+</script>
+
+</body>
+</html>

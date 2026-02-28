@@ -44,9 +44,31 @@ class FtpCalculator {
     return bestAvg;
   }
 
-  /// Calculate FTP as 75% of the best 1-minute average power.
-  static int calculateFtp(List<PowerReading> readings) {
-    final best = bestOneMinuteAverage(readings);
-    return (best * 0.75).round();
+  /// Average power across all readings.
+  static double averagePower(List<PowerReading> readings) {
+    if (readings.isEmpty) return 0;
+    final sum = readings.fold<int>(0, (s, r) => s + r.power);
+    return sum / readings.length;
+  }
+
+  /// Calculate FTP based on protocol:
+  /// - Ramp: best 1-min avg × 0.75
+  /// - 20 min: avg power × 0.95
+  /// - 8 min: avg power × 0.90
+  static int calculateFtp(
+    List<PowerReading> readings, [
+    TestProtocol protocol = TestProtocol.ramp,
+  ]) {
+    switch (protocol) {
+      case TestProtocol.ramp:
+        final best = bestOneMinuteAverage(readings);
+        return (best * 0.75).round();
+      case TestProtocol.twentyMin:
+        final avg = averagePower(readings);
+        return (avg * 0.95).round();
+      case TestProtocol.eightMin:
+        final avg = averagePower(readings);
+        return (avg * 0.90).round();
+    }
   }
 }

@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>FTP.TEST - Hamster Animation V2</title>
+  <style>
+    :root {
+      --dark: #1a1a1a;
+      --teal: #0D9488;
+      --pink: #EC4899;
+      --yellow: #FACC15;
+      --bg: #F5F5F0;
+      --card: #FFFFFF;
+      --muted: #AAAAAA;
+      /* Grey patch color */
+      --border-width: 4px;
+    }
+
+    body,
+    html {
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      font-family: monospace;
+      overflow: hidden;
+    }
+
+    .animation-container {
+      width: 800px;
+      height: 600px;
+      position: relative;
+      border: var(--border-width) solid var(--dark);
+      border-radius: 14px;
+      background: var(--card);
+      overflow: hidden;
+      box-shadow: 8px 8px 0 var(--dark);
+    }
+
+    .header {
+      background: var(--teal);
+      border-bottom: var(--border-width) solid var(--dark);
+      padding: 10px 16px;
+      font-size: 14px;
+      font-weight: 900;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .scene {
+      width: 100%;
+      height: calc(100% - 40px);
+      position: relative;
+    }
+
+    svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* SVG Styles matching guidelines */
+    .bold-stroke {
+      stroke: var(--dark);
+      stroke-width: var(--border-width);
+      stroke-linejoin: round;
+      stroke-linecap: round;
+    }
+
+    .dark-fill {
+      fill: var(--dark);
+    }
+
+    .white-fill {
+      fill: white;
+    }
+
+    /* Animations */
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes bounce {
+
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+
+      50% {
+        transform: translateY(3px);
+      }
+    }
+
+    @keyframes pedal-left {
+      0% {
+        transform: rotate(-25deg);
+      }
+
+      50% {
+        transform: rotate(15deg);
+      }
+
+      100% {
+        transform: rotate(-25deg);
+      }
+    }
+
+    @keyframes pedal-right {
+      0% {
+        transform: rotate(15deg);
+      }
+
+      50% {
+        transform: rotate(-25deg);
+      }
+
+      100% {
+        transform: rotate(15deg);
+      }
+    }
+
+    @keyframes dash {
+      from {
+        stroke-dashoffset: 100;
+      }
+
+      to {
+        stroke-dashoffset: 0;
+      }
+    }
+
+    .wheel {
+      transform-origin: center;
+      transform-box: fill-box;
+      animation: spin 2.5s linear infinite;
+    }
+
+    .pedal-group {
+      transform-origin: center;
+      transform-box: fill-box;
+      animation: spin 2.5s linear infinite;
+    }
+
+    .body-bounce {
+      animation: bounce 1.25s infinite ease-in-out;
+    }
+
+    .leg-left {
+      transform-origin: 320px 240px;
+      animation: pedal-left 2.5s infinite linear;
+    }
+
+    .leg-right {
+      transform-origin: 340px 240px;
+      animation: pedal-right 2.5s infinite linear;
+    }
+
+    .road-dash {
+      stroke-dasharray: 40 60;
+      animation: dash 1s linear infinite;
+    }
+
+    /* Arc text for HMSTR wheels */
+    .wheel-text {
+      font-size: 28px;
+      font-weight: 900;
+      fill: white;
+      font-family: sans-serif;
+      letter-spacing: 8px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="animation-container">
+    <div class="header">
+      <span>EASY MODE: ENGAGED</span>
+      <span style="color: var(--pink)">WARMUP</span>
+    </div>
+    <div class="scene">
+      <svg viewBox="0 0 800 500">
+
+        <!-- Defs for text paths -->
+        <defs>
+          <path id="curve-top" d="M 125,350 A 75,75 0 0,1 275,350" />
+          <path id="curve-bottom" d="M 275,350 A 75,75 0 0,1 125,350" />
+          <path id="curve-top2" d="M 525,350 A 75,75 0 0,1 675,350" />
+          <path id="curve-bottom2" d="M 675,350 A 75,75 0 0,1 525,350" />
+        </defs>
+
+        <!-- Ground / Road Indicator -->
+        <line x1="0" y1="460" x2="800" y2="460" class="bold-stroke road-dash" stroke-width="4" stroke="var(--dark)" />
+
+        <g class="body-bounce">
+
+          <!-- BIKE FRAME (BACK) -->
+          <g class="bike-back">
+            <!-- Back wheel -->
+            <g class="wheel" style="transform-origin: 200px 350px;">
+              <!-- Tire -->
+              <circle cx="200" cy="350" r="90" class="bold-stroke dark-fill" />
+              <!-- Deep Dish Rim -->
+              <circle cx="200" cy="350" r="82" class="bold-stroke" fill="#2d3748" />
+              <!-- Inner Rim Gap -->
+              <circle cx="200" cy="350" r="55" class="bold-stroke" fill="var(--bg)" />
+
+              <!-- Spokes -->
+              <line x1="200" y1="295" x2="200" y2="405" class="bold-stroke" stroke-width="2" />
+              <line x1="145" y1="350" x2="255" y2="350" class="bold-stroke" stroke-width="2" />
+              <line x1="161" y1="311" x2="239" y2="389" class="bold-stroke" stroke-width="2" />
+              <line x1="161" y1="389" x2="239" y2="311" class="bold-stroke" stroke-width="2" />
+
+              <circle cx="200" cy="350" r="10" class="bold-stroke" fill="var(--yellow)" />
+
+              <!-- HMSTR Text -->
+              <text class="wheel-text">
+                <textPath href="#curve-top" startOffset="50%" text-anchor="middle">HMSTR</textPath>
+              </text>
+              <text class="wheel-text">
+                <textPath href="#curve-bottom" startOffset="50%" text-anchor="middle">HMSTR</textPath>
+              </text>
+            </g>
+
+            <!-- Frame tubes back triangle (Teal) -->
+            <line x1="200" y1="350" x2="350" y2="350" class="bold-stroke" stroke-width="10" stroke="var(--teal)" />
+            <line x1="200" y1="350" x2="280" y2="200" class="bold-stroke" stroke-width="10" stroke="var(--teal)" />
+          </g>
+
+          <!-- RIGHT LEG (BACK) - Naked White -->
+          <g class="leg-right">
+            <path d="M 340 240 Q 420 280 400 370 Q 360 370 340 240" fill="#f0f0f0" class="bold-stroke" />
+          </g>
+
+          <!-- BIKE MAIN FRAME & FRONT -->
+          <g class="bike-front">
+            <!-- Main Frame Triangle (Teal & Pink) -->
+            <line x1="280" y1="200" x2="350" y2="350" class="bold-stroke" stroke-width="16" stroke="var(--pink)" />
+            <line x1="280" y1="200" x2="550" y2="180" class="bold-stroke" stroke-width="16" stroke="var(--teal)" />
+            <line x1="350" y1="350" x2="550" y2="180" class="bold-stroke" stroke-width="16" stroke="var(--teal)" />
+
+            <!-- Fork (Teal) -->
+            <line x1="550" y1="180" x2="600" y2="350" class="bold-stroke" stroke-width="12" stroke="var(--teal)" />
+
+            <!-- Handlebar Stem & Dropbars (Dark) -->
+            <!-- Stem -->
+            <line x1="550" y1="180" x2="560" y2="150" class="bold-stroke" stroke-width="10" stroke="var(--pink)" />
+            <!-- Dropbar Loop (Foreground) -->
+            <path d="M 560 150 L 600 150 Q 640 150 635 190 Q 630 220 590 220" fill="none" class="bold-stroke"
+              stroke-width="12" stroke="var(--dark)" />
+
+            <!-- Crank and chain -->
+            <circle cx="350" cy="350" r="30" class="bold-stroke" fill="var(--yellow)" stroke-dasharray="12 6"
+              stroke-width="6" />
+            <circle cx="350" cy="350" r="16" class="bold-stroke" fill="var(--dark)" />
+            <line x1="200" y1="340" x2="350" y2="340" class="bold-stroke" />
+            <line x1="200" y1="360" x2="350" y2="360" class="bold-stroke" />
+
+            <!-- Rotating Crank with Pedals -->
+            <g class="pedal-group" style="transform-origin: 350px 350px;">
+              <!-- Crank arms -->
+              <line x1="350" y1="320" x2="350" y2="380" class="bold-stroke" stroke-width="8" stroke="var(--pink)" />
+              <!-- Pedals -->
+              <rect x="330" y="310" width="40" height="12" rx="4" class="bold-stroke" fill="var(--dark)" />
+              <rect x="330" y="380" width="40" height="12" rx="4" class="bold-stroke" fill="var(--dark)" />
+            </g>
+
+            <!-- Front wheel -->
+            <g class="wheel" style="transform-origin: 600px 350px;">
+              <!-- Tire -->
+              <circle cx="600" cy="350" r="90" class="bold-stroke dark-fill" />
+              <!-- Deep Dish Rim -->
+              <circle cx="600" cy="350" r="82" class="bold-stroke" fill="#2d3748" />
+              <!-- Inner Rim Gap -->
+              <circle cx="600" cy="350" r="55" class="bold-stroke" fill="var(--bg)" />
+
+              <!-- Spokes -->
+              <line x1="600" y1="295" x2="600" y2="405" class="bold-stroke" stroke-width="2" />
+              <line x1="545" y1="350" x2="655" y2="350" class="bold-stroke" stroke-width="2" />
+              <line x1="561" y1="311" x2="639" y2="389" class="bold-stroke" stroke-width="2" />
+              <line x1="561" y1="389" x2="639" y2="311" class="bold-stroke" stroke-width="2" />
+              <circle cx="600" cy="350" r="10" class="bold-stroke" fill="var(--yellow)" />
+
+              <!-- HMSTR Text -->
+              <text class="wheel-text">
+                <textPath href="#curve-top2" startOffset="50%" text-anchor="middle">HMSTR</textPath>
+              </text>
+              <text class="wheel-text">
+                <textPath href="#curve-bottom2" startOffset="50%" text-anchor="middle">HMSTR</textPath>
+              </text>
+            </g>
+
+            <!-- Saddle strut & Saddle (Pink) -->
+            <line x1="280" y1="200" x2="260" y2="150" class="bold-stroke" stroke-width="8" />
+            <path d="M 230 160 Q 260 140 290 150 Q 300 160 260 170 Z" fill="var(--pink)" class="bold-stroke" />
+          </g>
+
+          <!-- HAMSTER NAKED WHITE/GREY -->
+          <!-- Hamster Body completely naked -->
+          <g class="hamster">
+            <!-- Body big chunky oval (White) -->
+            <rect x="250" y="90" width="160" height="180" rx="70" fill="white" class="bold-stroke" />
+            <!-- Grey Patch on back -->
+            <path d="M 250 160 Q 250 90 320 90 Q 360 90 340 160 Q 300 180 250 160 Z" fill="var(--muted)" />
+
+            <!-- Left Leg (Front) - White -->
+            <g class="leg-left">
+              <path d="M 320 240 Q 380 280 340 370 Q 300 370 320 240" fill="white" class="bold-stroke" />
+            </g>
+
+            <!-- Head (White with Grey top half) -->
+            <!-- Base White -->
+            <ellipse cx="380" cy="110" rx="60" ry="50" fill="white" class="bold-stroke" />
+            <!-- Grey Patch on Head -->
+            <path d="M 320 110 Q 320 60 380 60 Q 440 60 440 110 Q 380 90 320 110 Z" fill="var(--muted)" />
+
+            <!-- Ears -->
+            <circle cx="340" cy="65" r="16" fill="var(--muted)" class="bold-stroke" />
+            <circle cx="415" cy="65" r="16" fill="var(--muted)" class="bold-stroke" />
+            <!-- Inner Ears -->
+            <circle cx="340" cy="65" r="6" fill="var(--pink)" />
+            <circle cx="415" cy="65" r="6" fill="var(--pink)" />
+
+            <!-- Muzzle/Cheeks white area -->
+            <path d="M 360 110 Q 420 100 440 130 Q 420 160 360 145 Z" fill="white" class="bold-stroke" />
+
+            <!-- Nose Pink -->
+            <ellipse cx="435" cy="122" rx="6" ry="4" fill="var(--pink)" class="bold-stroke" />
+
+            <!-- Eyes big sweet -->
+            <ellipse cx="380" cy="95" rx="8" ry="12" fill="var(--dark)" />
+            <circle cx="383" cy="92" r="3" fill="white" />
+            <ellipse cx="410" cy="98" rx="8" ry="12" fill="var(--dark)" />
+            <circle cx="413" cy="95" r="3" fill="white" />
+
+            <!-- Mouth smile -->
+            <path d="M 400 140 Q 415 155 425 140" fill="none" stroke="var(--dark)" stroke-width="3"
+              stroke-linecap="round" />
+            <!-- Tooth -->
+            <rect x="410" y="146" width="6" height="6" fill="white" class="bold-stroke" stroke-width="2" />
+
+            <!-- Arms extending down to the DROPS -->
+            <!-- Arm (Right - Background) -->
+            <path d="M 370 170 Q 450 180 580 210" fill="none" class="bold-stroke" stroke="#f0f0f0" stroke-width="20"
+              stroke-linecap="round" />
+            <!-- Right Hand gripping lower Dropbar -->
+            <circle cx="580" cy="210" r="14" fill="#f0f0f0" class="bold-stroke" />
+
+            <!-- Dropbar Loop (Background left side cut) -->
+            <path d="M 540 150 Q 580 150 585 180 Q 585 200 550 200" fill="none" class="bold-stroke" stroke-width="12"
+              stroke="var(--dark)" />
+
+            <!-- Arm (Left - Foreground) -->
+            <path d="M 350 180 Q 440 200 600 220" fill="none" class="bold-stroke" stroke="white" stroke-width="24"
+              stroke-linecap="round" stroke-linejoin="round" />
+
+            <!-- Left Hand gripping lower Dropbar -->
+            <circle cx="600" cy="220" r="16" fill="white" class="bold-stroke" />
+
+            <!-- Cute lil tail -->
+            <path d="M 250 200 Q 230 210 240 230" fill="var(--muted)" stroke="var(--dark)" stroke-width="10"
+              stroke-linecap="round" />
+          </g>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+</body>
+
+</html>

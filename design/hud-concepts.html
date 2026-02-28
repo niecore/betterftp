@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FTP.TEST — HUD Concepts</title>
+<style>
+  @font-face { font-family: 'Iosevka'; font-style: normal; font-display: swap; font-weight: 400;
+    src: url(https://cdn.jsdelivr.net/fontsource/fonts/iosevka@latest/latin-400-normal.woff2) format('woff2'); }
+  @font-face { font-family: 'Iosevka'; font-style: normal; font-display: swap; font-weight: 500;
+    src: url(https://cdn.jsdelivr.net/fontsource/fonts/iosevka@latest/latin-500-normal.woff2) format('woff2'); }
+  @font-face { font-family: 'Iosevka'; font-style: normal; font-display: swap; font-weight: 700;
+    src: url(https://cdn.jsdelivr.net/fontsource/fonts/iosevka@latest/latin-700-normal.woff2) format('woff2'); }
+  @font-face { font-family: 'Iosevka'; font-style: normal; font-display: swap; font-weight: 900;
+    src: url(https://cdn.jsdelivr.net/fontsource/fonts/iosevka@latest/latin-900-normal.woff2) format('woff2'); }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --teal: #0D9488;
+    --teal-dark: #0F766E;
+    --teal-bg: rgba(13,148,136,0.06);
+    --pink: #EC4899;
+    --pink-dark: #DB2777;
+    --pink-bg: rgba(236,72,153,0.06);
+    --yellow: #FACC15;
+    --yellow-deep: #EAB308;
+    --yellow-bg: rgba(234,179,8,0.08);
+    --dark: #1a1a1a;
+    --bg: #F5F5F0;
+    --card: #fff;
+    --muted: #aaa;
+    --border-light: #f0f0f0;
+    --font: 'Iosevka', monospace;
+  }
+
+  body {
+    background: #E8E4DF;
+    font-family: var(--font);
+    padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 60px;
+  }
+
+  h1 {
+    font-size: 32px;
+    font-weight: 900;
+    color: var(--teal);
+    letter-spacing: -2px;
+    text-align: center;
+  }
+  h1 .dot { color: var(--pink); }
+  .page-sub {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: #ccc;
+    text-align: center;
+    margin-top: 4px;
+  }
+
+  .concept-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .concept-label {
+    font-size: 14px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--dark);
+    padding: 6px 16px;
+    border: 3px solid var(--dark);
+    border-radius: 8px;
+    background: var(--card);
+  }
+  .concept-desc {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    max-width: 340px;
+    text-align: center;
+  }
+
+  .phone-frame {
+    width: 375px;
+    height: 720px;
+    border-radius: 44px;
+    overflow: hidden;
+    position: relative;
+    background: var(--bg);
+    box-shadow: 0 25px 80px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.05);
+  }
+
+  /* ============================
+     CONCEPT A — "COCKPIT"
+     Central power focus with arc interval timer
+     ============================ */
+  .cockpit {
+    padding: 52px 22px 32px;
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    position: relative;
+  }
+
+  .cockpit-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .cockpit-title {
+    font-size: 20px;
+    font-weight: 900;
+    color: var(--dark);
+    letter-spacing: -0.5px;
+  }
+
+  .phase-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 5px 12px;
+    border-radius: 6px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    border: 2px solid;
+    background: var(--teal-bg);
+    color: var(--teal);
+    border-color: var(--teal);
+  }
+
+  /* Stage indicator strip */
+  .cockpit-stage {
+    border: 3px solid var(--teal);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+
+  .cockpit-stage-head {
+    padding: 8px 16px;
+    background: var(--teal);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .cockpit-stage-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #fff;
+  }
+
+  .cockpit-stage-target {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: rgba(255,255,255,0.7);
+  }
+
+  .cockpit-stage-body {
+    background: var(--card);
+    padding: 8px 16px 10px;
+  }
+
+  .cockpit-stage-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .cockpit-stage-time {
+    font-size: 11px;
+    font-weight: 900;
+    color: var(--dark);
+    letter-spacing: -0.5px;
+    white-space: nowrap;
+    min-width: 32px;
+  }
+
+  .cockpit-stage-track {
+    flex: 1;
+    height: 8px;
+    background: #e8e5e0;
+    border-radius: 4px;
+    border: 2px solid var(--dark);
+    overflow: hidden;
+  }
+
+  .cockpit-stage-fill {
+    height: 100%;
+    background: var(--teal);
+    border-radius: 2px;
+    transition: width 1s linear;
+  }
+
+  .cockpit-stage-remaining {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: -0.5px;
+    white-space: nowrap;
+    min-width: 32px;
+    text-align: right;
+  }
+
+  /* Hero power block */
+  .cockpit-power {
+    border: 3px solid var(--dark);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+
+  .cockpit-power-body {
+    background: var(--card);
+    padding: 24px 20px;
+    text-align: center;
+    position: relative;
+  }
+
+  .cockpit-power-val {
+    font-size: 88px;
+    font-weight: 900;
+    letter-spacing: -4px;
+    color: var(--dark);
+    line-height: 0.85;
+  }
+
+  .cockpit-power-unit {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  .cockpit-power-target {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    text-align: right;
+  }
+
+  .cockpit-power-target-label {
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .cockpit-power-target-val {
+    font-size: 16px;
+    font-weight: 900;
+    color: var(--teal);
+    letter-spacing: -0.5px;
+  }
+
+  /* Power delta indicator */
+  .cockpit-power-delta {
+    position: absolute;
+    bottom: 10px;
+    right: 16px;
+    font-size: 12px;
+    font-weight: 900;
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 2px solid;
+  }
+  .cockpit-power-delta.over {
+    background: var(--teal-bg);
+    color: var(--teal);
+    border-color: var(--teal);
+  }
+  .cockpit-power-delta.under {
+    background: var(--pink-bg);
+    color: var(--pink);
+    border-color: var(--pink);
+  }
+
+  /* Flanking stats row */
+  .cockpit-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .cockpit-stat {
+    border: 3px solid var(--dark);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+
+  .cockpit-stat-head {
+    padding: 7px 10px;
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .cockpit-stat-body {
+    background: var(--card);
+    padding: 10px;
+    text-align: center;
+  }
+
+  .cockpit-stat-val {
+    font-size: 30px;
+    font-weight: 900;
+    letter-spacing: -1px;
+    color: var(--dark);
+    line-height: 1;
+  }
+
+  .cockpit-stat-unit {
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    margin-top: 1px;
+  }
+
+  /* Elapsed time strip */
+  .cockpit-elapsed {
+    display: flex;
+    justify-content: center;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .cockpit-elapsed-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .cockpit-elapsed-val {
+    font-size: 24px;
+    font-weight: 900;
+    letter-spacing: -1px;
+    color: var(--dark);
+  }
+
+  .cockpit-spacer { flex: 1; }
+
+  /* Buttons */
+  .btn {
+    border: 3px solid;
+    border-radius: 14px;
+    padding: 17px;
+    width: 100%;
+    font-family: var(--font);
+    font-size: 14px;
+    font-weight: 900;
+    cursor: pointer;
+    letter-spacing: -0.3px;
+    transition: all 0.2s;
+    text-align: center;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-pink { background: var(--pink); border-color: var(--pink); color: #fff; }
+  .btn-pink:hover { background: var(--yellow); border-color: var(--yellow-deep); color: var(--dark); }
+  .btn-outline { background: transparent; border-color: var(--dark); color: var(--dark); font-weight: 700; }
+  .btn-outline:hover { background: var(--yellow); border-color: var(--yellow-deep); color: var(--dark); }
+
+
+  /* ============================
+     CONCEPT B — "DASHBOARD"
+     Horizontal bands, full-width interval bar
+     ============================ */
+  .dashboard {
+    padding: 52px 22px 32px;
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+  }
+
+  .dash-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .dash-title {
+    font-size: 20px;
+    font-weight: 900;
+    color: var(--dark);
+    letter-spacing: -0.5px;
+  }
+
+  /* Full-width interval block */
+  .dash-interval {
+    border: 3px solid var(--dark);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+
+  .dash-interval-head {
+    padding: 8px 16px;
+    background: var(--teal);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .dash-interval-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #fff;
+  }
+
+  .dash-interval-body {
+    background: var(--card);
+    padding: 14px 16px;
+  }
+
+  .dash-interval-times {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .dash-interval-time-block {
+    text-align: center;
+  }
+
+  .dash-interval-time-label {
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 2px;
+  }
+
+  .dash-interval-time-val {
+    font-size: 22px;
+    font-weight: 900;
+    letter-spacing: -1px;
+    color: var(--dark);
+    line-height: 1;
+  }
+
+  .dash-interval-target {
+    text-align: center;
+  }
+
+  .dash-interval-target-label {
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 2px;
+  }
+
+  .dash-interval-target-val {
+    font-size: 22px;
+    font-weight: 900;
+    letter-spacing: -1px;
+    color: var(--teal);
+    line-height: 1;
+  }
+
+  /* Segmented progress bar */
+  .dash-segments {
+    display: flex;
+    gap: 3px;
+    height: 12px;
+  }
+
+  .dash-segment {
+    flex: 1;
+    border-radius: 3px;
+    background: #e8e5e0;
+    border: 1.5px solid var(--dark);
+    overflow: hidden;
+    position: relative;
+  }
+
+  .dash-segment.done {
+    background: var(--teal);
+    border-color: var(--teal-dark);
+  }
+
+  .dash-segment.active {
+    border-color: var(--teal);
+  }
+
+  .dash-segment-fill {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    background: var(--teal);
+    border-radius: 1px;
+    transition: width 1s linear;
+  }
+
+  .dash-segment.future {
+    opacity: 0.4;
+  }
+
+  /* Hero power — horizontal strip */
+  .dash-power {
+    border: 3px solid var(--dark);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 10px;
+    background: var(--card);
+    display: flex;
+    align-items: stretch;
+  }
+
+  .dash-power-left {
+    flex: 1;
+    padding: 16px 20px;
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+
+  .dash-power-val {
+    font-size: 56px;
+    font-weight: 900;
+    letter-spacing: -3px;
+    color: var(--dark);
+    line-height: 0.85;
+  }
+
+  .dash-power-unit {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .dash-power-right {
+    width: 80px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border-left: 3px solid var(--dark);
+    position: relative;
+  }
+
+  /* Vertical power meter */
+  .dash-power-meter {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    background: #e8e5e0;
+  }
+
+  .dash-power-meter-fill {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--teal);
+    transition: height 1s ease;
+  }
+
+  .dash-power-meter-target {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--dark);
+    z-index: 2;
+  }
+
+  .dash-power-meter-label {
+    position: absolute;
+    bottom: 6px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 900;
+    color: #fff;
+    z-index: 3;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+  }
+
+  /* Stats row */
+  .dash-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .dash-stat {
+    border: 3px solid var(--dark);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+
+  .dash-stat-head {
+    padding: 7px 10px;
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .dash-stat-body {
+    background: var(--card);
+    padding: 10px;
+    text-align: center;
+  }
+
+  .dash-stat-val {
+    font-size: 30px;
+    font-weight: 900;
+    letter-spacing: -1px;
+    color: var(--dark);
+    line-height: 1;
+  }
+
+  .dash-stat-unit {
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    margin-top: 1px;
+  }
+
+  /* Total elapsed */
+  .dash-elapsed {
+    text-align: center;
+    margin-bottom: 12px;
+  }
+
+  .dash-elapsed-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 2px;
+  }
+
+  .dash-elapsed-val {
+    font-size: 28px;
+    font-weight: 900;
+    letter-spacing: -1px;
+    color: var(--dark);
+  }
+
+  .dash-spacer { flex: 1; }
+
+
+  /* ============================
+     CONCEPT C — "GAUGE"
+     Single-column data-dense, cycling computer style
+     ============================ */
+  .gauge {
+    padding: 52px 22px 32px;
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+  }
+
+  .gauge-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+
+  .gauge-title {
+    font-size: 20px;
+    font-weight: 900;
+    color: var(--dark);
+    letter-spacing: -0.5px;
+  }
+
+  /* Main HUD block — single bordered container */
+  .gauge-hud {
+    border: 3px solid var(--dark);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 10px;
+    background: var(--card);
+  }
+
+  /* Interval header with integrated progress */
+  .gauge-interval-header {
+    background: var(--teal);
+    padding: 10px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .gauge-interval-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .gauge-interval-stage {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #fff;
+  }
+
+  .gauge-interval-watts {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: rgba(255,255,255,0.7);
+  }
+
+  .gauge-interval-time {
+    font-size: 14px;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: -0.5px;
+  }
+
+  /* Progress strip below header */
+  .gauge-progress-strip {
+    height: 6px;
+    background: rgba(13,148,136,0.3);
+    position: relative;
+  }
+
+  .gauge-progress-fill {
+    height: 100%;
+    background: #5EEAD4;
+    transition: width 1s linear;
+  }
+
+  /* Central power zone */
+  .gauge-power-zone {
+    padding: 20px 20px 16px;
+    text-align: center;
+    border-bottom: 2px solid var(--border-light);
+    position: relative;
+  }
+
+  .gauge-power-val {
+    font-size: 72px;
+    font-weight: 900;
+    letter-spacing: -3px;
+    color: var(--dark);
+    line-height: 0.85;
+  }
+
+  .gauge-power-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* Power zone indicator */
+  .gauge-zone-bar {
+    display: flex;
+    margin-top: 12px;
+    height: 6px;
+    gap: 2px;
+  }
+
+  .gauge-zone-seg {
+    flex: 1;
+    border-radius: 3px;
+    opacity: 0.25;
+    transition: opacity 0.3s;
+  }
+  .gauge-zone-seg.z1 { background: #93C5FD; }
+  .gauge-zone-seg.z2 { background: #6EE7B7; }
+  .gauge-zone-seg.z3 { background: var(--teal); }
+  .gauge-zone-seg.z4 { background: var(--yellow); }
+  .gauge-zone-seg.z5 { background: #FB923C; }
+  .gauge-zone-seg.z6 { background: var(--pink); }
+  .gauge-zone-seg.z7 { background: #EF4444; }
+  .gauge-zone-seg.active { opacity: 1; }
+
+  /* Data rows */
+  .gauge-row {
+    display: flex;
+    border-bottom: 2px solid var(--border-light);
+  }
+
+  .gauge-row:last-child {
+    border-bottom: none;
+  }
+
+  .gauge-cell {
+    flex: 1;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .gauge-cell + .gauge-cell {
+    border-left: 2px solid var(--border-light);
+  }
+
+  .gauge-cell-icon {
+    width: 32px;
+    height: 32px;
+    border: 2.5px solid var(--dark);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+
+  .gauge-cell-data {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .gauge-cell-val {
+    font-size: 26px;
+    font-weight: 900;
+    letter-spacing: -1px;
+    color: var(--dark);
+    line-height: 1;
+  }
+
+  .gauge-cell-label {
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  /* Elapsed footer in gauge */
+  .gauge-elapsed {
+    border: 3px solid var(--dark);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+
+  .gauge-elapsed-head {
+    padding: 8px 16px;
+    background: var(--dark);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #fff;
+    text-align: center;
+  }
+
+  .gauge-elapsed-body {
+    background: var(--card);
+    padding: 12px 16px;
+    display: flex;
+    justify-content: center;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .gauge-elapsed-val {
+    font-size: 36px;
+    font-weight: 900;
+    letter-spacing: -2px;
+    color: var(--dark);
+    line-height: 1;
+  }
+
+  .gauge-elapsed-est {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  .gauge-spacer { flex: 1; }
+
+  /* ============================
+     SHARED: Animations
+     ============================ */
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(13,148,136,0); }
+    50% { box-shadow: 0 0 0 4px rgba(13,148,136,0.15); }
+  }
+
+  @keyframes blink-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .live-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #5EEAD4;
+    animation: blink-dot 1.5s ease-in-out infinite;
+    margin-right: 6px;
+  }
+
+  .live-dot-pink {
+    background: var(--pink);
+  }
+</style>
+</head>
+<body>
+
+<div>
+  <h1>FTP<span class="dot">.</span>TEST</h1>
+  <div class="page-sub">HUD Concepts</div>
+</div>
+
+<!-- =============================================
+     CONCEPT A — "COCKPIT"
+     ============================================= -->
+<div class="concept-section">
+  <div class="concept-label">A — Cockpit</div>
+  <div class="concept-desc">Central power hero with interval progress bar. Power delta shows if you're above/below target. Clean and focused.</div>
+  <div class="phone-frame">
+    <div class="cockpit">
+      <div class="cockpit-top">
+        <div class="cockpit-title">Ramp Test</div>
+        <div class="phase-badge"><span class="live-dot"></span>Stage 4</div>
+      </div>
+
+      <!-- Interval progress -->
+      <div class="cockpit-stage">
+        <div class="cockpit-stage-head">
+          <span class="cockpit-stage-label">Interval 4 / 12</span>
+          <span class="cockpit-stage-target">TARGET 180W</span>
+        </div>
+        <div class="cockpit-stage-body">
+          <div class="cockpit-stage-bar">
+            <span class="cockpit-stage-time" id="a-done">0:38</span>
+            <div class="cockpit-stage-track">
+              <div class="cockpit-stage-fill" id="a-fill" style="width: 63%"></div>
+            </div>
+            <span class="cockpit-stage-remaining" id="a-left">0:22</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hero power -->
+      <div class="cockpit-power" style="animation: pulse-glow 2s ease-in-out infinite;">
+        <div class="cockpit-power-body">
+          <div class="cockpit-power-target">
+            <div class="cockpit-power-target-label">Target</div>
+            <div class="cockpit-power-target-val">180W</div>
+          </div>
+          <div class="cockpit-power-val" id="a-power">185</div>
+          <div class="cockpit-power-unit">Watts</div>
+          <div class="cockpit-power-delta over" id="a-delta">+5</div>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="cockpit-stats">
+        <div class="cockpit-stat">
+          <div class="cockpit-stat-head" style="background:var(--pink);"><span>♥</span> Heart Rate</div>
+          <div class="cockpit-stat-body">
+            <div class="cockpit-stat-val" id="a-hr">148</div>
+            <div class="cockpit-stat-unit">BPM</div>
+          </div>
+        </div>
+        <div class="cockpit-stat">
+          <div class="cockpit-stat-head" style="background:var(--teal-dark);"><span>⟳</span> Cadence</div>
+          <div class="cockpit-stat-body">
+            <div class="cockpit-stat-val" id="a-cad">88</div>
+            <div class="cockpit-stat-unit">RPM</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Elapsed -->
+      <div class="cockpit-elapsed">
+        <span class="cockpit-elapsed-label">Elapsed</span>
+        <span class="cockpit-elapsed-val" id="a-elapsed">08:38</span>
+      </div>
+
+      <div class="cockpit-spacer"></div>
+
+      <button class="btn btn-pink" style="margin-bottom:8px;">■ Stop Test</button>
+      <button class="btn btn-outline">Finish & Calculate</button>
+    </div>
+  </div>
+</div>
+
+<!-- =============================================
+     CONCEPT B — "DASHBOARD"
+     ============================================= -->
+<div class="concept-section">
+  <div class="concept-label">B — Dashboard</div>
+  <div class="concept-desc">Segmented interval bar shows time done/left. Vertical power meter fills up as you push. Information-dense horizontal layout.</div>
+  <div class="phone-frame">
+    <div class="dashboard">
+      <div class="dash-top">
+        <div class="dash-title">Ramp Test</div>
+        <div class="phase-badge"><span class="live-dot"></span>Stage 4</div>
+      </div>
+
+      <!-- Interval block with segmented bar -->
+      <div class="dash-interval">
+        <div class="dash-interval-head">
+          <span class="dash-interval-label">Interval 4 / 12</span>
+          <span class="dash-interval-label" style="color:rgba(255,255,255,0.7);">180W</span>
+        </div>
+        <div class="dash-interval-body">
+          <div class="dash-interval-times">
+            <div class="dash-interval-time-block">
+              <div class="dash-interval-time-label">Done</div>
+              <div class="dash-interval-time-val" id="b-done">0:38</div>
+            </div>
+            <div class="dash-interval-target">
+              <div class="dash-interval-target-label">Target</div>
+              <div class="dash-interval-target-val">180W</div>
+            </div>
+            <div class="dash-interval-time-block">
+              <div class="dash-interval-time-label">Left</div>
+              <div class="dash-interval-time-val" id="b-left">0:22</div>
+            </div>
+          </div>
+          <!-- 60 segments for 60 seconds -->
+          <div class="dash-segments" id="b-segments">
+            <!-- Filled by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Power strip with meter -->
+      <div class="dash-power">
+        <div class="dash-power-left">
+          <span class="dash-power-val" id="b-power">185</span>
+          <span class="dash-power-unit">W</span>
+        </div>
+        <div class="dash-power-right">
+          <div class="dash-power-meter">
+            <div class="dash-power-meter-fill" id="b-meter" style="height: 74%;"></div>
+            <div class="dash-power-meter-target" id="b-target-line" style="bottom: 72%;"></div>
+            <div class="dash-power-meter-label" id="b-pct">103%</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="dash-stats">
+        <div class="dash-stat">
+          <div class="dash-stat-head" style="background:var(--pink);"><span>♥</span> Heart Rate</div>
+          <div class="dash-stat-body">
+            <div class="dash-stat-val" id="b-hr">148</div>
+            <div class="dash-stat-unit">BPM</div>
+          </div>
+        </div>
+        <div class="dash-stat">
+          <div class="dash-stat-head" style="background:var(--teal-dark);"><span>⟳</span> Cadence</div>
+          <div class="dash-stat-body">
+            <div class="dash-stat-val" id="b-cad">88</div>
+            <div class="dash-stat-unit">RPM</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Elapsed -->
+      <div class="dash-elapsed">
+        <div class="dash-elapsed-label">Total Elapsed</div>
+        <div class="dash-elapsed-val" id="b-elapsed">08:38</div>
+      </div>
+
+      <div class="dash-spacer"></div>
+
+      <button class="btn btn-pink" style="margin-bottom:8px;">■ Stop Test</button>
+      <button class="btn btn-outline">Finish & Calculate</button>
+    </div>
+  </div>
+</div>
+
+<!-- =============================================
+     CONCEPT C — "GAUGE"
+     ============================================= -->
+<div class="concept-section">
+  <div class="concept-label">C — Gauge</div>
+  <div class="concept-desc">All-in-one bordered block. Integrated progress strip, power zone indicator, icon-labeled rows for HR/cadence. Cycling computer feel.</div>
+  <div class="phone-frame">
+    <div class="gauge">
+      <div class="gauge-top">
+        <div class="gauge-title">Ramp Test</div>
+        <div class="phase-badge"><span class="live-dot"></span>Stage 4</div>
+      </div>
+
+      <!-- Unified HUD block -->
+      <div class="gauge-hud">
+        <!-- Interval header -->
+        <div class="gauge-interval-header">
+          <div class="gauge-interval-info">
+            <span class="gauge-interval-stage">INT 4/12</span>
+            <span class="gauge-interval-watts">• 180W TARGET</span>
+          </div>
+          <span class="gauge-interval-time" id="c-time">0:22</span>
+        </div>
+
+        <!-- Animated progress strip -->
+        <div class="gauge-progress-strip">
+          <div class="gauge-progress-fill" id="c-fill" style="width: 63%;"></div>
+        </div>
+
+        <!-- Power zone -->
+        <div class="gauge-power-zone">
+          <div class="gauge-power-val" id="c-power">185</div>
+          <div class="gauge-power-label">Watts</div>
+          <div class="gauge-zone-bar">
+            <div class="gauge-zone-seg z1"></div>
+            <div class="gauge-zone-seg z2"></div>
+            <div class="gauge-zone-seg z3 active" id="c-zone-3"></div>
+            <div class="gauge-zone-seg z4" id="c-zone-4"></div>
+            <div class="gauge-zone-seg z5" id="c-zone-5"></div>
+            <div class="gauge-zone-seg z6" id="c-zone-6"></div>
+            <div class="gauge-zone-seg z7"></div>
+          </div>
+        </div>
+
+        <!-- Data rows -->
+        <div class="gauge-row">
+          <div class="gauge-cell">
+            <div class="gauge-cell-icon" style="background:#FCE7F3;">♥</div>
+            <div class="gauge-cell-data">
+              <div class="gauge-cell-val" id="c-hr">148</div>
+              <div class="gauge-cell-label">Heart Rate • BPM</div>
+            </div>
+          </div>
+          <div class="gauge-cell">
+            <div class="gauge-cell-icon" style="background:#F0FDF4;">⟳</div>
+            <div class="gauge-cell-data">
+              <div class="gauge-cell-val" id="c-cad">88</div>
+              <div class="gauge-cell-label">Cadence • RPM</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Elapsed time -->
+      <div class="gauge-elapsed">
+        <div class="gauge-elapsed-head">⏱ Total Elapsed</div>
+        <div class="gauge-elapsed-body">
+          <span class="gauge-elapsed-val" id="c-elapsed">08:38</span>
+          <span class="gauge-elapsed-est">of ~20:00</span>
+        </div>
+      </div>
+
+      <div class="gauge-spacer"></div>
+
+      <button class="btn btn-pink" style="margin-bottom:8px;">■ Stop Test</button>
+      <button class="btn btn-outline">Finish & Calculate</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+  // =============================================
+  // LIVE SIMULATION — animates all 3 concepts
+  // =============================================
+
+  // Shared state
+  let totalElapsed = 518; // 8:38
+  let intervalSec = 38;   // 38 seconds into 60-second interval
+  const intervalDuration = 60;
+  const targetPower = 180;
+
+  function fmt(s) {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return m.toString().padStart(2, '0') + ':' + sec.toString().padStart(2, '0');
+  }
+
+  function fmtShort(s) {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return m + ':' + sec.toString().padStart(2, '0');
+  }
+
+  // Build concept B segments
+  const segContainer = document.getElementById('b-segments');
+  const numSegments = 20;
+  for (let i = 0; i < numSegments; i++) {
+    const seg = document.createElement('div');
+    seg.className = 'dash-segment';
+    segContainer.appendChild(seg);
+  }
+
+  function updateSegments(filled) {
+    const segs = segContainer.children;
+    const filledCount = Math.floor((filled / intervalDuration) * numSegments);
+    const partialIdx = filledCount;
+    const partialPct = ((filled / intervalDuration) * numSegments - filledCount) * 100;
+
+    for (let i = 0; i < segs.length; i++) {
+      segs[i].className = 'dash-segment';
+      segs[i].innerHTML = '';
+      if (i < filledCount) {
+        segs[i].classList.add('done');
+      } else if (i === partialIdx) {
+        segs[i].classList.add('active');
+        const fill = document.createElement('div');
+        fill.className = 'dash-segment-fill';
+        fill.style.width = partialPct + '%';
+        segs[i].appendChild(fill);
+      } else {
+        segs[i].classList.add('future');
+      }
+    }
+  }
+
+  function randAround(base, range) {
+    return base + Math.floor(Math.random() * range * 2) - range;
+  }
+
+  function tick() {
+    totalElapsed++;
+    intervalSec++;
+
+    if (intervalSec >= intervalDuration) {
+      intervalSec = 0;
+    }
+
+    const done = intervalSec;
+    const left = intervalDuration - intervalSec;
+    const pct = (done / intervalDuration) * 100;
+
+    // Simulated values
+    const power = randAround(targetPower, 12);
+    const hr = randAround(150, 5);
+    const cad = randAround(88, 4);
+    const delta = power - targetPower;
+    const deltaStr = delta >= 0 ? '+' + delta : '' + delta;
+
+    // === Concept A ===
+    document.getElementById('a-done').textContent = fmtShort(done);
+    document.getElementById('a-left').textContent = fmtShort(left);
+    document.getElementById('a-fill').style.width = pct + '%';
+    document.getElementById('a-power').textContent = power;
+    document.getElementById('a-hr').textContent = hr;
+    document.getElementById('a-cad').textContent = cad;
+    document.getElementById('a-elapsed').textContent = fmt(totalElapsed);
+    const deltaEl = document.getElementById('a-delta');
+    deltaEl.textContent = deltaStr;
+    deltaEl.className = 'cockpit-power-delta ' + (delta >= 0 ? 'over' : 'under');
+
+    // === Concept B ===
+    document.getElementById('b-done').textContent = fmtShort(done);
+    document.getElementById('b-left').textContent = fmtShort(left);
+    updateSegments(done);
+    document.getElementById('b-power').textContent = power;
+    document.getElementById('b-hr').textContent = hr;
+    document.getElementById('b-cad').textContent = cad;
+    document.getElementById('b-elapsed').textContent = fmt(totalElapsed);
+    const meterPct = Math.min(100, (power / 250) * 100);
+    document.getElementById('b-meter').style.height = meterPct + '%';
+    document.getElementById('b-pct').textContent = Math.round((power / targetPower) * 100) + '%';
+
+    // === Concept C ===
+    document.getElementById('c-time').textContent = fmtShort(left);
+    document.getElementById('c-fill').style.width = pct + '%';
+    document.getElementById('c-power').textContent = power;
+    document.getElementById('c-hr').textContent = hr;
+    document.getElementById('c-cad').textContent = cad;
+    document.getElementById('c-elapsed').textContent = fmt(totalElapsed);
+
+    // Zone indicator (simplified — highlight based on power)
+    const zones = ['c-zone-3', 'c-zone-4', 'c-zone-5', 'c-zone-6'];
+    zones.forEach(id => document.getElementById(id).classList.remove('active'));
+    if (power < 170) document.getElementById('c-zone-3').classList.add('active');
+    else if (power < 185) document.getElementById('c-zone-4').classList.add('active');
+    else if (power < 195) document.getElementById('c-zone-5').classList.add('active');
+    else document.getElementById('c-zone-6').classList.add('active');
+  }
+
+  // Initial render
+  updateSegments(intervalSec);
+
+  // Tick every second
+  setInterval(tick, 1000);
+</script>
+
+</body>
+</html>

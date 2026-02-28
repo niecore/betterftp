@@ -13,6 +13,7 @@ class HrRepository {
   final BleScannerService _scannerService;
 
   BluetoothDevice? _connectedDevice;
+  String? _connectedDeviceName;
   StreamSubscription? _hrSubscription;
   StreamSubscription? _disconnectSubscription;
 
@@ -26,6 +27,7 @@ class HrRepository {
 
   HrConnectionState _currentState = HrConnectionState.disconnected;
   HrConnectionState get currentState => _currentState;
+  String? get connectedDeviceName => _connectedDeviceName;
 
   HrRepository(this._scannerService);
 
@@ -43,6 +45,7 @@ class HrRepository {
       }
 
       _connectedDevice = device;
+      _connectedDeviceName = monitor.name;
 
       await device.connect(
         license: License.free,
@@ -143,6 +146,7 @@ class HrRepository {
         developer.log('HR disconnect error: $e', name: 'HrRepository');
       }
       _connectedDevice = null;
+      _connectedDeviceName = null;
     }
 
     _updateConnectionState(HrConnectionState.disconnected);
@@ -193,4 +197,11 @@ final hrConnectionStateProvider = StreamProvider<HrConnectionState>((ref) {
 final hrDataProvider = StreamProvider<HrData>((ref) {
   final repository = ref.watch(hrRepositoryProvider);
   return repository.hrDataStream;
+});
+
+/// Provider for connected HR device name
+final connectedHrNameProvider = Provider<String?>((ref) {
+  // Re-evaluate when connection state changes
+  ref.watch(hrConnectionStateProvider);
+  return ref.watch(hrRepositoryProvider).connectedDeviceName;
 });

@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>FTP.TEST — Logo Drafts with Animated Hamster</title>
+  <style>
+    @import url('https://cdn.jsdelivr.net/fontsource/fonts/iosevka@latest/latin-400-normal.css');
+    @import url('https://cdn.jsdelivr.net/fontsource/fonts/iosevka@latest/latin-500-normal.css');
+    @import url('https://cdn.jsdelivr.net/fontsource/fonts/iosevka@latest/latin-700-normal.css');
+    @import url('https://cdn.jsdelivr.net/fontsource/fonts/iosevka@latest/latin-900-normal.css');
+
+    :root {
+      --dark: #1a1a1a;
+      --teal: #0D9488;
+      --teal-dark: #0F766E;
+      --pink: #EC4899;
+      --pink-dark: #DB2777;
+      --yellow: #FACC15;
+      --yellow-deep: #EAB308;
+      --bg: #F5F5F0;
+      --card: #FFFFFF;
+      --muted: #AAAAAA;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      font-family: 'Iosevka', monospace;
+      padding: 40px;
+      color: var(--dark);
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 900;
+      letter-spacing: -1px;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 4px;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 48px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+      max-width: 1300px;
+    }
+
+    .draft-card {
+      border: 3px solid var(--dark);
+      border-radius: 14px;
+      background: var(--card);
+      overflow: hidden;
+      transition: border-color 0.2s ease, transform 0.12s ease;
+    }
+    .draft-card:hover {
+      border-color: var(--yellow-deep);
+      transform: translateY(-2px);
+    }
+
+    .draft-header {
+      padding: 10px 16px;
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #fff;
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 3px solid var(--dark);
+    }
+    .draft-header.teal { background: var(--teal); }
+    .draft-header.pink { background: var(--pink); }
+    .draft-header.dark { background: var(--dark); }
+    .draft-card:hover .draft-header { background: var(--yellow-deep); color: var(--dark); }
+
+    .draft-body {
+      padding: 40px 32px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 360px;
+      position: relative;
+    }
+
+    .draft-desc {
+      padding: 16px;
+      font-size: 12px;
+      font-weight: 400;
+      color: #666;
+      border-top: 2px solid #f0f0f0;
+      line-height: 1.6;
+    }
+
+    .full-width { grid-column: 1 / -1; }
+
+    /* Video styling helpers */
+    .hamster-video {
+      object-fit: contain;
+    }
+    .hamster-video-cover {
+      object-fit: cover;
+    }
+
+    /* Logo text helpers */
+    .logo-ftp {
+      font-family: 'Iosevka', monospace;
+      font-weight: 900;
+      color: var(--teal);
+      letter-spacing: -2px;
+      line-height: 0.92;
+    }
+    .logo-dot { color: var(--pink); }
+    .logo-sub {
+      font-family: 'Iosevka', monospace;
+      font-weight: 500;
+      font-size: 11px;
+      letter-spacing: 4px;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    /* Dark background variant */
+    .bg-dark { background: var(--dark); }
+    .bg-teal { background: var(--teal); }
+  </style>
+</head>
+<body>
+
+<h1>FTP.TEST — Logo Concepts</h1>
+<p class="subtitle">Animated hamster mascot integration</p>
+
+<div class="grid">
+
+  <!-- ============================================================ -->
+  <!-- DRAFT A: Classic Horizontal Lockup                           -->
+  <!-- ============================================================ -->
+  <div class="draft-card">
+    <div class="draft-header teal">
+      <span>Draft A</span>
+      <span>Horizontal Lockup</span>
+    </div>
+    <div class="draft-body" style="background: var(--bg);">
+      <div style="display: flex; align-items: center; gap: 28px;">
+        <!-- Animated hamster -->
+        <div style="width: 160px; height: 160px; flex-shrink: 0; border: 3px solid var(--dark); border-radius: 14px; overflow: hidden; background: #fff;">
+          <video autoplay loop muted playsinline class="hamster-video" style="width: 100%; height: 100%;">
+            <source src="animated.mp4" type="video/mp4">
+          </video>
+        </div>
+        <!-- Text logo -->
+        <div>
+          <div class="logo-ftp" style="font-size: 56px;">FTP<span class="logo-dot">.</span></div>
+          <div class="logo-ftp" style="font-size: 56px;">TEST</div>
+          <div class="logo-sub" style="margin-top: 6px;">POWER LAB</div>
+        </div>
+      </div>
+    </div>
+    <div class="draft-desc">
+      <strong>Horizontal lockup</strong> — animated hamster in a bordered block card beside the stacked wordmark. Clean and versatile for headers, nav bars, and splash screens. The boxy card frame matches the app's design language.
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- DRAFT B: Circular Mask — Side by Side                        -->
+  <!-- ============================================================ -->
+  <div class="draft-card">
+    <div class="draft-header pink">
+      <span>Draft B</span>
+      <span>Circle Badge</span>
+    </div>
+    <div class="draft-body" style="background: var(--bg);">
+      <div style="display: flex; align-items: center; gap: 28px;">
+        <!-- Circular masked video -->
+        <div style="width: 150px; height: 150px; flex-shrink: 0; border: 4px solid var(--dark); border-radius: 50%; overflow: hidden; background: #fff;">
+          <video autoplay loop muted playsinline class="hamster-video" style="width: 100%; height: 100%;">
+            <source src="animated.mp4" type="video/mp4">
+          </video>
+        </div>
+        <div style="border-left: 2px solid #e0e0e0; padding-left: 28px; height: 100px; display: flex; flex-direction: column; justify-content: center;">
+          <div class="logo-ftp" style="font-size: 48px;">FTP<span class="logo-dot">.</span>TEST</div>
+          <div class="logo-sub" style="margin-top: 4px;">POWER LAB</div>
+        </div>
+      </div>
+    </div>
+    <div class="draft-desc">
+      <strong>Circle badge</strong> — video clipped into a round frame (like a wheel!) with the wordmark inline. The vertical separator creates a clean split. Works well for website headers and social profiles.
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- DRAFT C: Stacked — Video on Top, Text Below                  -->
+  <!-- ============================================================ -->
+  <div class="draft-card">
+    <div class="draft-header teal">
+      <span>Draft C</span>
+      <span>Stacked Center</span>
+    </div>
+    <div class="draft-body" style="background: var(--bg); flex-direction: column; gap: 20px;">
+      <!-- Video centered -->
+      <div style="width: 200px; height: 200px; border: 3px solid var(--dark); border-radius: 14px; overflow: hidden; background: #fff;">
+        <video autoplay loop muted playsinline class="hamster-video" style="width: 100%; height: 100%;">
+          <source src="animated.mp4" type="video/mp4">
+        </video>
+      </div>
+      <!-- Text centered below -->
+      <div style="text-align: center;">
+        <div class="logo-ftp" style="font-size: 52px;">FTP<span class="logo-dot">.</span>TEST</div>
+        <div class="logo-sub" style="margin-top: 4px;">POWER LAB</div>
+      </div>
+    </div>
+    <div class="draft-desc">
+      <strong>Stacked center</strong> — animated hamster on top, wordmark below. Classic app splash screen layout. Feels balanced and focused — great for loading screens and about pages.
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- DRAFT D: Dark Mode — Video in Teal Ring                      -->
+  <!-- ============================================================ -->
+  <div class="draft-card">
+    <div class="draft-header dark">
+      <span>Draft D</span>
+      <span>Dark Mode</span>
+    </div>
+    <div class="draft-body bg-dark" style="flex-direction: column; gap: 20px;">
+      <div style="display: flex; align-items: center; gap: 28px;">
+        <!-- Video with teal ring -->
+        <div style="width: 140px; height: 140px; flex-shrink: 0; border: 4px solid var(--teal); border-radius: 50%; overflow: hidden; background: var(--dark); box-shadow: 0 0 0 3px var(--dark), 0 0 0 6px var(--teal);">
+          <video autoplay loop muted playsinline class="hamster-video" style="width: 100%; height: 100%;">
+            <source src="animated.mp4" type="video/mp4">
+          </video>
+        </div>
+        <div>
+          <div style="font-family: 'Iosevka', monospace; font-weight: 900; font-size: 52px; color: #fff; letter-spacing: -2px; line-height: 0.92;">
+            FTP<span style="color: var(--pink);">.</span>
+          </div>
+          <div style="font-family: 'Iosevka', monospace; font-weight: 900; font-size: 52px; color: #fff; letter-spacing: -2px; line-height: 0.92;">
+            TEST
+          </div>
+          <div style="font-family: 'Iosevka', monospace; font-weight: 500; font-size: 11px; letter-spacing: 4px; color: #666; margin-top: 6px;">POWER LAB</div>
+        </div>
+      </div>
+    </div>
+    <div class="draft-desc">
+      <strong>Dark mode variant</strong> — animated hamster in a teal double-ring on dark background, white wordmark. Premium feel. The teal glow ring echoes the bike frame color. For dark UI states and OLED screens.
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- DRAFT E: Hero / Splash — Full Width                          -->
+  <!-- ============================================================ -->
+  <div class="draft-card full-width">
+    <div class="draft-header pink">
+      <span>Draft E</span>
+      <span>Hero Splash Screen</span>
+    </div>
+    <div class="draft-body" style="background: var(--bg); padding: 48px; flex-direction: column; gap: 0;">
+      <div style="display: flex; align-items: center; justify-content: center; gap: 0; position: relative;">
+        <!-- Giant faded background text -->
+        <div style="position: absolute; font-family: 'Iosevka', monospace; font-weight: 900; font-size: 160px; color: var(--teal); opacity: 0.06; letter-spacing: -8px; white-space: nowrap; pointer-events: none;">
+          FTP.TEST
+        </div>
+        <!-- Animated hamster overlapping with text -->
+        <div style="width: 260px; height: 260px; flex-shrink: 0; overflow: hidden; position: relative; z-index: 2; margin-right: -30px;">
+          <video autoplay loop muted playsinline class="hamster-video" style="width: 100%; height: 100%;">
+            <source src="animated.mp4" type="video/mp4">
+          </video>
+        </div>
+        <!-- Big text -->
+        <div style="position: relative; z-index: 1;">
+          <div class="logo-ftp" style="font-size: 88px;">FTP<span class="logo-dot">.</span></div>
+          <div class="logo-ftp" style="font-size: 88px;">TEST</div>
+          <div class="logo-sub" style="margin-top: 8px;">POWER LAB</div>
+        </div>
+      </div>
+    </div>
+    <div class="draft-desc">
+      <strong>Hero splash</strong> — the animated hamster rides <em>into</em> the oversized wordmark, overlapping it. The giant faded watermark text behind creates depth. Maximum impact for app launch, landing pages, and marketing.
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- DRAFT F: App Icon — Square with Hamster + FTP.               -->
+  <!-- ============================================================ -->
+  <div class="draft-card">
+    <div class="draft-header dark">
+      <span>Draft F</span>
+      <span>App Icon</span>
+    </div>
+    <div class="draft-body" style="background: var(--bg); flex-direction: column; gap: 24px;">
+      <div style="display: flex; align-items: flex-end; gap: 28px;">
+        <!-- Large app icon -->
+        <div style="width: 180px; height: 180px; border: 3px solid var(--dark); border-radius: 36px; overflow: hidden; background: var(--teal); display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;">
+          <!-- Video -->
+          <div style="width: 130px; height: 130px; margin-top: -8px;">
+            <video autoplay loop muted playsinline class="hamster-video" style="width: 100%; height: 100%;">
+              <source src="animated.mp4" type="video/mp4">
+            </video>
+          </div>
+          <!-- FTP. text at bottom -->
+          <div style="font-family: 'Iosevka', monospace; font-weight: 900; font-size: 28px; color: #fff; letter-spacing: -1px; margin-top: -12px; position: relative; z-index: 2;">
+            FTP<span style="color: var(--pink);">.</span>
+          </div>
+        </div>
+
+        <!-- Medium -->
+        <div style="width: 100px; height: 100px; border: 3px solid var(--dark); border-radius: 22px; overflow: hidden; background: var(--teal); display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;">
+          <div style="width: 70px; height: 70px; margin-top: -4px;">
+            <video autoplay loop muted playsinline class="hamster-video" style="width: 100%; height: 100%;">
+              <source src="animated.mp4" type="video/mp4">
+            </video>
+          </div>
+          <div style="font-family: 'Iosevka', monospace; font-weight: 900; font-size: 16px; color: #fff; letter-spacing: -0.5px; margin-top: -6px;">
+            FTP<span style="color: var(--pink);">.</span>
+          </div>
+        </div>
+
+        <!-- Small -->
+        <div style="width: 56px; height: 56px; border: 2px solid var(--dark); border-radius: 14px; overflow: hidden; background: var(--teal); display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;">
+          <div style="width: 40px; height: 40px; margin-top: -2px;">
+            <video autoplay loop muted playsinline class="hamster-video" style="width: 100%; height: 100%;">
+              <source src="animated.mp4" type="video/mp4">
+            </video>
+          </div>
+          <div style="font-family: 'Iosevka', monospace; font-weight: 900; font-size: 9px; color: #fff; margin-top: -4px;">
+            FTP<span style="color: var(--pink);">.</span>
+          </div>
+        </div>
+      </div>
+      <div style="font-size: 10px; color: var(--muted); text-align: center; font-weight: 500;">
+        App Store (1024px) &nbsp;&bull;&nbsp; Home Screen (180px) &nbsp;&bull;&nbsp; Small (56px)
+      </div>
+    </div>
+    <div class="draft-desc">
+      <strong>App icon</strong> — animated hamster on teal background with "FTP." below. The hamster's teal bike frame blends into the teal background, making the character pop. Shown at three sizes. For production, the animation would use the still frame.
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- DRAFT G: Block Card Logo — Matches App Design System         -->
+  <!-- ============================================================ -->
+  <div class="draft-card">
+    <div class="draft-header teal">
+      <span>Draft G</span>
+      <span>In-App Block Card</span>
+    </div>
+    <div class="draft-body" style="background: var(--bg);">
+      <!-- Mimicking the app's block card component -->
+      <div style="border: 3px solid var(--dark); border-radius: 14px; background: var(--card); overflow: hidden; width: 340px;">
+        <!-- Teal header -->
+        <div style="background: var(--teal); border-bottom: 3px solid var(--dark); padding: 10px 16px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: #fff; display: flex; justify-content: space-between;">
+          <span>FTP.TEST</span>
+          <span style="color: var(--yellow);">&#9679; LIVE</span>
+        </div>
+        <!-- Body with logo -->
+        <div style="padding: 20px; display: flex; align-items: center; gap: 16px;">
+          <!-- Animated hamster in icon-box style -->
+          <div style="width: 80px; height: 80px; flex-shrink: 0; border: 2.5px solid var(--dark); border-radius: 10px; overflow: hidden; background: #FEF3C7;">
+            <video autoplay loop muted playsinline class="hamster-video" style="width: 100%; height: 100%;">
+              <source src="animated.mp4" type="video/mp4">
+            </video>
+          </div>
+          <div>
+            <div class="logo-ftp" style="font-size: 36px; line-height: 0.95;">FTP<span class="logo-dot">.</span></div>
+            <div class="logo-ftp" style="font-size: 36px; line-height: 0.95;">TEST</div>
+            <div class="logo-sub" style="margin-top: 4px; font-size: 9px;">POWER LAB</div>
+          </div>
+        </div>
+        <!-- Color bar at bottom -->
+        <div style="height: 6px; display: flex;">
+          <div style="flex: 1; background: var(--teal);"></div>
+          <div style="flex: 1; background: var(--pink);"></div>
+          <div style="flex: 1; background: var(--yellow);"></div>
+          <div style="flex: 1; background: var(--dark);"></div>
+        </div>
+      </div>
+    </div>
+    <div class="draft-desc">
+      <strong>In-app block card</strong> — the logo presented as the app's own "block" component with teal header strip, icon-box hamster, and color bar footer. This is how the logo would live <em>inside the app itself</em> on the home screen. Fully native to the design system.
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- DRAFT H: Emblem / Sticker with Video Center                  -->
+  <!-- ============================================================ -->
+  <div class="draft-card">
+    <div class="draft-header pink">
+      <span>Draft H</span>
+      <span>Emblem / Sticker</span>
+    </div>
+    <div class="draft-body" style="background: var(--bg);">
+      <div style="position: relative; width: 300px; height: 300px;">
+        <!-- Outer ring -->
+        <svg viewBox="0 0 300 300" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
+          <circle cx="150" cy="150" r="145" fill="var(--card)" stroke="var(--dark)" stroke-width="4"/>
+          <circle cx="150" cy="150" r="133" fill="none" stroke="var(--dark)" stroke-width="2"/>
+          <!-- Arc text -->
+          <defs>
+            <path id="topArc" d="M35,150 A115,115 0 0,1 265,150"/>
+            <path id="bottomArc" d="M265,165 A115,115 0 0,1 35,165"/>
+          </defs>
+          <text font-family="'Iosevka', monospace" font-weight="900" font-size="22" letter-spacing="8" fill="var(--teal)">
+            <textPath href="#topArc" startOffset="50%" text-anchor="middle">FTP<tspan fill="var(--pink)">.</tspan>TEST</textPath>
+          </text>
+          <text font-family="'Iosevka', monospace" font-weight="700" font-size="12" letter-spacing="5" fill="var(--muted)">
+            <textPath href="#bottomArc" startOffset="50%" text-anchor="middle">POWER LAB</textPath>
+          </text>
+          <!-- Decorative dots -->
+          <circle cx="35" cy="150" r="4" fill="var(--teal)"/>
+          <circle cx="265" cy="150" r="4" fill="var(--pink)"/>
+        </svg>
+        <!-- Centered video -->
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 170px; height: 170px; border-radius: 50%; overflow: hidden; border: 3px solid var(--dark);">
+          <video autoplay loop muted playsinline class="hamster-video" style="width: 100%; height: 100%;">
+            <source src="animated.mp4" type="video/mp4">
+          </video>
+        </div>
+      </div>
+    </div>
+    <div class="draft-desc">
+      <strong>Emblem / sticker</strong> — classic circular badge with text arcing around the animated hamster at center. Perfect for merch, jersey patches, sticker packs, and social media avatars. Retro cycling-club aesthetic.
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- BONUS: Side-by-side light vs dark                            -->
+  <!-- ============================================================ -->
+  <div class="draft-card full-width">
+    <div class="draft-header dark">
+      <span>Comparison</span>
+      <span>Light vs Dark</span>
+    </div>
+    <div class="draft-body" style="padding: 0; min-height: 240px;">
+      <div style="display: flex; width: 100%; min-height: 240px;">
+        <!-- Light -->
+        <div style="flex: 1; background: var(--bg); display: flex; align-items: center; justify-content: center; gap: 20px; padding: 32px;">
+          <div style="width: 100px; height: 100px; border: 3px solid var(--dark); border-radius: 14px; overflow: hidden; background: #fff; flex-shrink: 0;">
+            <video autoplay loop muted playsinline class="hamster-video" style="width: 100%; height: 100%;">
+              <source src="animated.mp4" type="video/mp4">
+            </video>
+          </div>
+          <div>
+            <div class="logo-ftp" style="font-size: 38px;">FTP<span class="logo-dot">.</span></div>
+            <div class="logo-ftp" style="font-size: 38px;">TEST</div>
+            <div class="logo-sub" style="margin-top: 3px; font-size: 9px;">POWER LAB</div>
+          </div>
+        </div>
+        <!-- Divider -->
+        <div style="width: 3px; background: var(--dark);"></div>
+        <!-- Dark -->
+        <div style="flex: 1; background: var(--dark); display: flex; align-items: center; justify-content: center; gap: 20px; padding: 32px;">
+          <div style="width: 100px; height: 100px; border: 3px solid var(--teal); border-radius: 14px; overflow: hidden; background: #222; flex-shrink: 0;">
+            <video autoplay loop muted playsinline class="hamster-video" style="width: 100%; height: 100%;">
+              <source src="animated.mp4" type="video/mp4">
+            </video>
+          </div>
+          <div>
+            <div style="font-family: 'Iosevka', monospace; font-weight: 900; font-size: 38px; color: #fff; letter-spacing: -2px; line-height: 0.92;">FTP<span style="color: var(--pink);">.</span></div>
+            <div style="font-family: 'Iosevka', monospace; font-weight: 900; font-size: 38px; color: #fff; letter-spacing: -2px; line-height: 0.92;">TEST</div>
+            <div style="font-family: 'Iosevka', monospace; font-weight: 500; font-size: 9px; letter-spacing: 4px; color: #555; margin-top: 3px;">POWER LAB</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="draft-desc">
+      <strong>Light vs Dark comparison</strong> — the recommended horizontal lockup shown in both modes. On dark backgrounds, the border switches to teal and text goes white. The hamster animation works on both.
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top: 48px; padding: 24px; border: 3px solid var(--dark); border-radius: 14px; background: var(--card); max-width: 1300px;">
+  <div style="font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--muted); margin-bottom: 12px;">Implementation Notes</div>
+  <p style="font-size: 13px; line-height: 1.7; color: #555;">
+    All drafts embed the actual <strong>animated.mp4</strong> with autoplay, loop, and muted attributes. For production app icons (Draft F), use a static frame (<code>hamster-still.png</code>, included in assets).
+    Every draft follows the FTP.TEST design system: Iosevka typeface, 3px borders, 14px radius, teal/pink/dark palette. The hamster's teal bike and pink bar tape naturally integrate with the brand colors.
+  </p>
+</div>
+
+</body>
+</html>

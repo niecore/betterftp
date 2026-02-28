@@ -9,14 +9,12 @@ import '../domain/ramp_test_config.dart';
 import '../domain/ramp_test_state.dart';
 
 class RampTestController extends Notifier<RampTestState> {
-  final RampTestConfig _config;
+  RampTestConfig _config = const RampTestConfig();
 
   Timer? _timer;
   StreamSubscription? _dataSubscription;
   StreamSubscription? _hrSubscription;
   int? _latestHr;
-
-  RampTestController([this._config = const RampTestConfig()]);
 
   TrainerRepository get _trainerRepository =>
       ref.read(trainerRepositoryProvider);
@@ -25,15 +23,22 @@ class RampTestController extends Notifier<RampTestState> {
   @override
   RampTestState build() => const RampTestState();
 
-  void start() {
+  void start([TestProtocol protocol = TestProtocol.ramp]) {
     if (state.phase != RampTestPhase.idle) return;
+
+    _config = RampTestConfig.forProtocol(protocol);
 
     // Start warmup phase
     state = state.copyWith(
       phase: RampTestPhase.warmup,
+      protocol: protocol,
       targetPower: _config.warmupPower,
       elapsedSeconds: 0,
       stageElapsedSeconds: 0,
+      sustainedElapsedSeconds: 0,
+      warmupDuration: _config.warmupDuration,
+      stageDuration: _config.stageDuration,
+      testDuration: _config.testDuration,
       currentStage: 0,
       powerReadings: [],
       bestOneMinAvgPower: 0,
@@ -99,16 +104,26 @@ class RampTestController extends Notifier<RampTestState> {
 
     if (state.phase == RampTestPhase.warmup) {
       if (newStageElapsed >= _config.warmupDuration) {
-        // Transition to ramping
+        // Transition based on protocol
         final targetPower = _config.startPower;
         _trainerRepository.setTargetPower(targetPower);
-        state = state.copyWith(
-          phase: RampTestPhase.ramping,
-          elapsedSeconds: newElapsed,
-          stageElapsedSeconds: 0,
-          currentStage: 0,
-          targetPower: targetPower,
-        );
+        if (state.protocol == TestProtocol.ramp) {
+          state = state.copyWith(
+            phase: RampTestPhase.ramping,
+            elapsedSeconds: newElapsed,
+            stageElapsedSeconds: 0,
+            currentStage: 0,
+            targetPower: targetPower,
+          );
+        } else {
+          state = state.copyWith(
+            phase: RampTestPhase.sustained,
+            elapsedSeconds: newElapsed,
+            stageElapsedSeconds: 0,
+            sustainedElapsedSeconds: 0,
+            targetPower: targetPower,
+          );
+        }
       } else {
         state = state.copyWith(
           elapsedSeconds: newElapsed,
@@ -134,19 +149,49 @@ class RampTestController extends Notifier<RampTestState> {
           stageElapsedSeconds: newStageElapsed,
         );
       }
+    } else if (state.phase == RampTestPhase.sustained) {
+      final newSustained = state.sustainedElapsedSeconds + 1;
+      if (_config.testDuration > 0 && newSustained >= _config.testDuration) {
+        // Auto-complete when test duration reached
+        stop();
+        return;
+      }
+      state = state.copyWith(
+        elapsedSeconds: newElapsed,
+        sustainedElapsedSeconds: newSustained,
+      );
     }
+  }
+
+  void adjustPower(int delta) {
+    if (state.phase != RampTestPhase.warmup &&
+        state.phase != RampTestPhase.sustained) {
+      return;
+    }
+    final newPower = (state.targetPower + delta).clamp(50, 500);
+    state = state.copyWith(targetPower: newPower);
+    _trainerRepository.setTargetPower(newPower);
   }
 
   void skipWarmup() {
     if (state.phase != RampTestPhase.warmup) return;
     final targetPower = _config.startPower;
     _trainerRepository.setTargetPower(targetPower);
-    state = state.copyWith(
-      phase: RampTestPhase.ramping,
-      stageElapsedSeconds: 0,
-      currentStage: 0,
-      targetPower: targetPower,
-    );
+    if (state.protocol == TestProtocol.ramp) {
+      state = state.copyWith(
+        phase: RampTestPhase.ramping,
+        stageElapsedSeconds: 0,
+        currentStage: 0,
+        targetPower: targetPower,
+      );
+    } else {
+      state = state.copyWith(
+        phase: RampTestPhase.sustained,
+        stageElapsedSeconds: 0,
+        sustainedElapsedSeconds: 0,
+        targetPower: targetPower,
+      );
+    }
   }
 
   void stop() {
@@ -157,7 +202,7 @@ class RampTestController extends Notifier<RampTestState> {
     _hrSubscription?.cancel();
     _hrSubscription = null;
 
-    final ftp = FtpCalculator.calculateFtp(state.powerReadings);
+    final ftp = FtpCalculator.calculateFtp(state.powerReadings, state.protocol);
 
     state = state.copyWith(
       phase: RampTestPhase.completed,

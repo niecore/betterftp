@@ -32,323 +32,357 @@ class ResultsScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Header
-              Center(
-                child: Column(
-                  children: [
-                    const SizedBox(height: 8),
-                    // Badge
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 6,
-                        horizontal: 16,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.teal,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: const Text(
-                        '\u2713 TEST COMPLETE',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 2,
-                          color: Colors.white,
+              // Scrollable content
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Header
+                      Center(
+                        child: Column(
+                          children: [
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 6,
+                                horizontal: 16,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.teal,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Text(
+                                '\u2713 TEST COMPLETE',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 2,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            const Text(
+                              'Your Results',
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -1,
+                                color: AppColors.dark,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 10),
-                    const Text(
-                      'Your Results',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -1,
-                        color: AppColors.dark,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 18),
+                      const SizedBox(height: 18),
 
-              // FTP result block
-              Container(
-                decoration: BoxDecoration(
-                  border: Border.all(color: AppColors.dark, width: 3),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: Column(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 10,
-                        horizontal: 16,
-                      ),
-                      color: AppColors.pink,
-                      width: double.infinity,
-                      child: const Text(
-                        'ESTIMATED FTP',
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 2,
-                          color: Colors.white,
+                      // FTP result block
+                      Container(
+                        decoration: BoxDecoration(
+                          border:
+                              Border.all(color: AppColors.dark, width: 3),
+                          borderRadius: BorderRadius.circular(14),
                         ),
-                      ),
-                    ),
-                    Container(
-                      color: AppColors.card,
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 24,
-                        horizontal: 16,
-                      ),
-                      child: Column(
-                        children: [
-                          Text(
-                            '${testState.calculatedFtp ?? 0}',
-                            style: const TextStyle(
-                              fontSize: 68,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -3,
-                              height: 1,
-                              color: AppColors.dark,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          const Text(
-                            'WATTS',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppColors.muted,
-                              letterSpacing: 2,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 10),
-
-              // Avg HR + Duration stat cards
-              Row(
-                children: [
-                  // Avg HR
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(color: AppColors.dark, width: 3),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      clipBehavior: Clip.antiAlias,
-                      child: Column(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 7,
-                              horizontal: 10,
-                            ),
-                            color: AppColors.pink,
-                            width: double.infinity,
-                            child: const Row(
-                              children: [
-                                Text(
-                                  '\u2665',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: Colors.white,
-                                  ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(11),
+                          child: Column(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 10,
+                                  horizontal: 16,
                                 ),
-                                SizedBox(width: 5),
-                                Text(
-                                  'AVG HR',
-                                  style: TextStyle(
-                                    fontSize: 8,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: 1.5,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Container(
-                            color: AppColors.card,
-                            padding: const EdgeInsets.all(12),
-                            width: double.infinity,
-                            child: Column(
-                              children: [
-                                Text(
-                                  testState.maxHeartRate != null
-                                      ? '${testState.maxHeartRate}'
-                                      : '--',
-                                  style: const TextStyle(
-                                    fontSize: 30,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: -1,
-                                    height: 1,
-                                    color: AppColors.dark,
-                                  ),
-                                ),
-                                const SizedBox(height: 1),
-                                const Text(
-                                  'BPM',
+                                color: AppColors.pink,
+                                width: double.infinity,
+                                child: const Text(
+                                  'ESTIMATED FTP',
                                   style: TextStyle(
                                     fontSize: 9,
-                                    color: AppColors.muted,
-                                    letterSpacing: 1,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  // Duration
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(color: AppColors.dark, width: 3),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      clipBehavior: Clip.antiAlias,
-                      child: Column(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 7,
-                              horizontal: 10,
-                            ),
-                            color: AppColors.teal,
-                            width: double.infinity,
-                            child: const Row(
-                              children: [
-                                Text(
-                                  '\u23F1',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                SizedBox(width: 5),
-                                Text(
-                                  'DURATION',
-                                  style: TextStyle(
-                                    fontSize: 8,
                                     fontWeight: FontWeight.w700,
-                                    letterSpacing: 1.5,
+                                    letterSpacing: 2,
                                     color: Colors.white,
                                   ),
                                 ),
-                              ],
-                            ),
-                          ),
-                          Container(
-                            color: AppColors.card,
-                            padding: const EdgeInsets.all(12),
-                            width: double.infinity,
-                            child: Column(
-                              children: [
-                                Text(
-                                  _formatTime(testState.elapsedSeconds),
-                                  style: const TextStyle(
-                                    fontSize: 30,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: -1,
-                                    height: 1,
-                                    color: AppColors.dark,
-                                  ),
+                              ),
+                              Container(
+                                color: AppColors.card,
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 24,
+                                  horizontal: 16,
                                 ),
-                                const SizedBox(height: 1),
-                                const Text(
-                                  'MINUTES',
-                                  style: TextStyle(
-                                    fontSize: 9,
-                                    color: AppColors.muted,
-                                    letterSpacing: 1,
-                                  ),
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      '${testState.calculatedFtp ?? 0}',
+                                      style: const TextStyle(
+                                        fontSize: 68,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: -3,
+                                        height: 1,
+                                        color: AppColors.dark,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    const Text(
+                                      'WATTS',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.muted,
+                                        letterSpacing: 2,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-
-              // Test Summary block
-              Container(
-                decoration: BoxDecoration(
-                  border: Border.all(color: AppColors.dark, width: 3),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: Column(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 10,
-                        horizontal: 16,
-                      ),
-                      color: AppColors.dark,
-                      width: double.infinity,
-                      child: const Text(
-                        'TEST SUMMARY',
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 2,
-                          color: Colors.white,
                         ),
                       ),
-                    ),
-                    Container(
-                      color: AppColors.card,
-                      child: Column(
+                      const SizedBox(height: 10),
+
+                      // Max HR + Duration stat cards
+                      Row(
                         children: [
-                          _DetailRow(
-                            label: 'Best 1-min Avg',
-                            value:
-                                '${testState.bestOneMinAvgPower.round()} W',
-                          ),
-                          _DetailRow(
-                            label: 'Max Power',
-                            value: '${testState.targetPower} W',
-                          ),
-                          if (testState.maxHeartRate != null)
-                            _DetailRow(
-                              label: 'Max Heart Rate',
-                              value: '${testState.maxHeartRate} BPM',
+                          // Max HR
+                          Expanded(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                    color: AppColors.dark, width: 3),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(11),
+                                child: Column(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 7,
+                                        horizontal: 10,
+                                      ),
+                                      color: AppColors.pink,
+                                      width: double.infinity,
+                                      child: const Row(
+                                        children: [
+                                          Text(
+                                            '\u2665',
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                          SizedBox(width: 5),
+                                          Text(
+                                            'MAX HR',
+                                            style: TextStyle(
+                                              fontSize: 8,
+                                              fontWeight: FontWeight.w700,
+                                              letterSpacing: 1.5,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Container(
+                                      color: AppColors.card,
+                                      padding: const EdgeInsets.all(12),
+                                      width: double.infinity,
+                                      child: Column(
+                                        children: [
+                                          Text(
+                                            testState.maxHeartRate != null
+                                                ? '${testState.maxHeartRate}'
+                                                : '--',
+                                            style: const TextStyle(
+                                              fontSize: 30,
+                                              fontWeight: FontWeight.w900,
+                                              letterSpacing: -1,
+                                              height: 1,
+                                              color: AppColors.dark,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 1),
+                                          const Text(
+                                            'BPM',
+                                            style: TextStyle(
+                                              fontSize: 9,
+                                              color: AppColors.muted,
+                                              letterSpacing: 1,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
-                          _DetailRow(
-                            label: 'Stages Completed',
-                            value: '${testState.currentStage + 1}',
                           ),
-                          _DetailRow(
-                            label: 'Test Mode',
-                            value: 'Ramp',
-                            isLast: true,
+                          const SizedBox(width: 8),
+                          // Duration
+                          Expanded(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                    color: AppColors.dark, width: 3),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(11),
+                                child: Column(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 7,
+                                        horizontal: 10,
+                                      ),
+                                      color: AppColors.teal,
+                                      width: double.infinity,
+                                      child: const Row(
+                                        children: [
+                                          Text(
+                                            '\u23F1',
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                          SizedBox(width: 5),
+                                          Text(
+                                            'DURATION',
+                                            style: TextStyle(
+                                              fontSize: 8,
+                                              fontWeight: FontWeight.w700,
+                                              letterSpacing: 1.5,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Container(
+                                      color: AppColors.card,
+                                      padding: const EdgeInsets.all(12),
+                                      width: double.infinity,
+                                      child: Column(
+                                        children: [
+                                          Text(
+                                            _formatTime(
+                                                testState.elapsedSeconds),
+                                            style: const TextStyle(
+                                              fontSize: 30,
+                                              fontWeight: FontWeight.w900,
+                                              letterSpacing: -1,
+                                              height: 1,
+                                              color: AppColors.dark,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 1),
+                                          const Text(
+                                            'MINUTES',
+                                            style: TextStyle(
+                                              fontSize: 9,
+                                              color: AppColors.muted,
+                                              letterSpacing: 1,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
                           ),
                         ],
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 10),
+
+                      // Test Summary block
+                      Container(
+                        decoration: BoxDecoration(
+                          border:
+                              Border.all(color: AppColors.dark, width: 3),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(11),
+                          child: Column(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 10,
+                                  horizontal: 16,
+                                ),
+                                color: AppColors.dark,
+                                width: double.infinity,
+                                child: const Text(
+                                  'TEST SUMMARY',
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 2,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                              Container(
+                                color: AppColors.card,
+                                child: Column(
+                                  children: [
+                                    if (testState.protocol ==
+                                        TestProtocol.ramp)
+                                      _DetailRow(
+                                        label: 'Best 1-min Avg',
+                                        value:
+                                            '${testState.bestOneMinAvgPower.round()} W',
+                                      ),
+                                    _DetailRow(
+                                      label: 'Max Power',
+                                      value:
+                                          '${testState.maxPower} W',
+                                    ),
+                                    if (testState.maxHeartRate != null)
+                                      _DetailRow(
+                                        label: 'Max Heart Rate',
+                                        value:
+                                            '${testState.maxHeartRate} BPM',
+                                      ),
+                                    if (testState.averageHeartRate != null)
+                                      _DetailRow(
+                                        label: 'Avg Heart Rate',
+                                        value:
+                                            '${testState.averageHeartRate} BPM',
+                                      ),
+                                    if (testState.protocol ==
+                                        TestProtocol.ramp)
+                                      _DetailRow(
+                                        label: 'Stages Completed',
+                                        value:
+                                            '${testState.currentStage + 1}',
+                                      ),
+                                    _DetailRow(
+                                      label: 'Protocol',
+                                      value: testState.protocol.label,
+                                      isLast: true,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
 
-              const Spacer(),
-
-              // Buttons
+              // Buttons pinned at bottom
+              const SizedBox(height: 10),
               AppButton(
                 label: 'Save Result',
                 variant: AppButtonVariant.teal,
@@ -387,10 +421,12 @@ class _DetailRow extends StatelessWidget {
         border: isLast
             ? null
             : const Border(
-                bottom: BorderSide(color: AppColors.borderLight, width: 2),
+                bottom:
+                    BorderSide(color: AppColors.borderLight, width: 2),
               ),
       ),
-      padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 16),
+      padding:
+          const EdgeInsets.symmetric(vertical: 11, horizontal: 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [

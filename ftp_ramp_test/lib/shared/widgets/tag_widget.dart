@@ -20,14 +20,30 @@ class TagWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
         color: isOn ? AppColors.tealBg : Colors.transparent,
       ),
-      child: Text(
-        label ?? (isOn ? 'ON' : '---'),
-        style: TextStyle(
-          fontSize: 9,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 1,
-          color: isOn ? AppColors.teal : const Color(0xFFCCCCCC),
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isOn) ...[
+            const Text(
+              '\u2713',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: AppColors.teal,
+              ),
+            ),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            label ?? (isOn ? 'CONNECTED' : '---'),
+            style: TextStyle(
+              fontSize: 9,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1,
+              color: isOn ? AppColors.teal : const Color(0xFFCCCCCC),
+            ),
+          ),
+        ],
       ),
     );
   }

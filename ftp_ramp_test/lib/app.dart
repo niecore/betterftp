@@ -9,7 +9,7 @@ class FtpRampTestApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'FTP.TEST',
+      title: 'BETTER.FTP',
       theme: buildAppTheme(),
       routerConfig: appRouter,
     );

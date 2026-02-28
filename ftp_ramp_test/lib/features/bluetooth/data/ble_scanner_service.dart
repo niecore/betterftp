@@ -11,11 +11,13 @@ class ScannedDevice {
   final String id;
   final String name;
   final List<String> serviceUuids;
+  final int rssi;
 
   const ScannedDevice({
     required this.id,
     required this.name,
     this.serviceUuids = const [],
+    this.rssi = 0,
   });
 
   @override
@@ -34,14 +36,27 @@ class BleScannerService {
   StreamSubscription? _scanSubscription;
   final _discoveredDevices = <String, BluetoothDevice>{};
 
-  /// Scan for BLE devices, returning a stream of discovered devices
+  /// Scan for BLE devices, returning a stream of discovered devices.
+  /// Waits for the Bluetooth adapter to be ready before starting.
   Stream<List<ScannedDevice>> scanForDevices() {
     final devices = <String, ScannedDevice>{};
     final controller = StreamController<List<ScannedDevice>>();
 
-    FlutterBluePlus.startScan(
-      timeout: const Duration(seconds: 10),
-    );
+    // Wait for adapter to be ready, then start scan
+    () async {
+      try {
+        final adapterState = await FlutterBluePlus.adapterState
+            .firstWhere((s) => s == BluetoothAdapterState.on)
+            .timeout(const Duration(seconds: 5));
+        if (adapterState != BluetoothAdapterState.on) return;
+        await FlutterBluePlus.startScan(
+          timeout: const Duration(seconds: 10),
+        );
+      } catch (e) {
+        developer.log('Scan start error: $e', name: 'BleScannerService');
+        controller.addError(e);
+      }
+    }();
 
     _scanSubscription = FlutterBluePlus.onScanResults.listen((scanResults) {
       for (final scanResult in scanResults) {
@@ -68,6 +83,7 @@ class BleScannerService {
           serviceUuids: ad.serviceUuids
               .map((u) => u.str.toLowerCase())
               .toList(),
+          rssi: scanResult.rssi,
         );
       }
       controller.add(devices.values.toList());

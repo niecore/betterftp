@@ -9,7 +9,10 @@
       "Bash(flutter doctor:*)",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "Bash(open /Users/mui2lol/playground/ftp-test/design/hud-concepts.html)",
+      "Bash(open /Users/mui2lol/playground/ftp-test/design/hud-combined.html)",
+      "Bash(open /Users/mui2lol/playground/ftp-test/design/hud-summary-options.html)"
     ]
   }
 }

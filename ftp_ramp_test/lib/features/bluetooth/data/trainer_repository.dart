@@ -13,6 +13,7 @@ class TrainerRepository {
   final BleScannerService _scannerService;
 
   BluetoothDevice? _connectedDevice;
+  String? _connectedDeviceName;
   StreamSubscription? _bikeDataSubscription;
   StreamSubscription? _disconnectSubscription;
 
@@ -30,6 +31,7 @@ class TrainerRepository {
 
   TrainerConnectionState _currentState = TrainerConnectionState.disconnected;
   TrainerConnectionState get currentState => _currentState;
+  String? get connectedDeviceName => _connectedDeviceName;
 
   TrainerRepository(this._scannerService);
 
@@ -49,6 +51,7 @@ class TrainerRepository {
       }
 
       _connectedDevice = device;
+      _connectedDeviceName = trainer.name;
 
       await device.connect(
         license: License.free,
@@ -255,6 +258,7 @@ class TrainerRepository {
         developer.log('Disconnect error: $e', name: 'TrainerRepository');
       }
       _connectedDevice = null;
+      _connectedDeviceName = null;
     }
 
     _updateConnectionState(TrainerConnectionState.disconnected);
@@ -307,4 +311,11 @@ final connectionStateProvider = StreamProvider<TrainerConnectionState>((ref) {
 final trainerDataProvider = StreamProvider<TrainerData>((ref) {
   final repository = ref.watch(trainerRepositoryProvider);
   return repository.trainerDataStream;
+});
+
+/// Provider for connected trainer device name
+final connectedTrainerNameProvider = Provider<String?>((ref) {
+  // Re-evaluate when connection state changes
+  ref.watch(connectionStateProvider);
+  return ref.watch(trainerRepositoryProvider).connectedDeviceName;
 });

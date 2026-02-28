@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FTP.TEST — Combined HUD</title>
+<style>
+  @font-face { font-family: 'Iosevka'; font-style: normal; font-display: swap; font-weight: 400;
+    src: url(https://cdn.jsdelivr.net/fontsource/fonts/iosevka@latest/latin-400-normal.woff2) format('woff2'); }
+  @font-face { font-family: 'Iosevka'; font-style: normal; font-display: swap; font-weight: 500;
+    src: url(https://cdn.jsdelivr.net/fontsource/fonts/iosevka@latest/latin-500-normal.woff2) format('woff2'); }
+  @font-face { font-family: 'Iosevka'; font-style: normal; font-display: swap; font-weight: 700;
+    src: url(https://cdn.jsdelivr.net/fontsource/fonts/iosevka@latest/latin-700-normal.woff2) format('woff2'); }
+  @font-face { font-family: 'Iosevka'; font-style: normal; font-display: swap; font-weight: 900;
+    src: url(https://cdn.jsdelivr.net/fontsource/fonts/iosevka@latest/latin-900-normal.woff2) format('woff2'); }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --teal: #0D9488;
+    --teal-dark: #0F766E;
+    --teal-bg: rgba(13,148,136,0.06);
+    --teal-light: #5EEAD4;
+    --pink: #EC4899;
+    --pink-dark: #DB2777;
+    --pink-bg: rgba(236,72,153,0.06);
+    --yellow: #FACC15;
+    --yellow-deep: #EAB308;
+    --yellow-bg: rgba(234,179,8,0.08);
+    --dark: #1a1a1a;
+    --bg: #F5F5F0;
+    --card: #fff;
+    --muted: #aaa;
+    --border-light: #f0f0f0;
+    --font: 'Iosevka', monospace;
+  }
+
+  body {
+    background: #E8E4DF;
+    font-family: var(--font);
+    padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 60px;
+  }
+
+  h1 {
+    font-size: 32px;
+    font-weight: 900;
+    color: var(--teal);
+    letter-spacing: -2px;
+    text-align: center;
+  }
+  h1 .dot { color: var(--pink); }
+  .page-sub {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: #ccc;
+    text-align: center;
+    margin-top: 4px;
+  }
+
+  .concept-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .concept-label {
+    font-size: 14px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--dark);
+    padding: 6px 16px;
+    border: 3px solid var(--dark);
+    border-radius: 8px;
+    background: var(--card);
+  }
+  .concept-desc {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    max-width: 375px;
+    text-align: center;
+  }
+
+  .phone-frame {
+    width: 375px;
+    height: 720px;
+    border-radius: 44px;
+    overflow: hidden;
+    position: relative;
+    background: var(--bg);
+    box-shadow: 0 25px 80px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.05);
+  }
+
+  /* ============================
+     SHARED
+     ============================ */
+  .screen {
+    padding: 52px 22px 32px;
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+  }
+
+  .top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+
+  .screen-title {
+    font-size: 20px;
+    font-weight: 900;
+    color: var(--dark);
+    letter-spacing: -0.5px;
+  }
+
+  .phase-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 5px 12px;
+    border-radius: 6px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    border: 2px solid;
+    background: var(--teal-bg);
+    color: var(--teal);
+    border-color: var(--teal);
+  }
+
+  @keyframes blink-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .live-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--teal-light);
+    animation: blink-dot 1.5s ease-in-out infinite;
+    margin-right: 6px;
+  }
+
+  .btn {
+    border: 3px solid;
+    border-radius: 14px;
+    padding: 17px;
+    width: 100%;
+    font-family: var(--font);
+    font-size: 14px;
+    font-weight: 900;
+    cursor: pointer;
+    letter-spacing: -0.3px;
+    transition: all 0.2s;
+    text-align: center;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-pink { background: var(--pink); border-color: var(--pink); color: #fff; }
+  .btn-pink:hover { background: var(--yellow); border-color: var(--yellow-deep); color: var(--dark); }
+  .btn-outline { background: transparent; border-color: var(--dark); color: var(--dark); font-weight: 700; }
+  .btn-outline:hover { background: var(--yellow); border-color: var(--yellow-deep); color: var(--dark); }
+
+  .spacer { flex: 1; }
+
+  /* ============================
+     UNIFIED HUD BLOCK
+     ============================ */
+  .hud {
+    border: 3px solid var(--dark);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 10px;
+    background: var(--card);
+  }
+
+  /* --- Interval header --- */
+  .hud-header {
+    background: var(--teal);
+    padding: 10px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .hud-header-stage {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #fff;
+  }
+
+  /* --- Interval body with segmented bar --- */
+  .hud-interval {
+    padding: 12px 16px 14px;
+    border-bottom: 2px solid var(--border-light);
+  }
+
+  .hud-interval-times {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .hud-time-block {
+    text-align: center;
+  }
+
+  .hud-time-label {
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 2px;
+  }
+
+  .hud-time-val {
+    font-size: 20px;
+    font-weight: 900;
+    letter-spacing: -1px;
+    color: var(--dark);
+    line-height: 1;
+  }
+
+  .hud-time-val.done {
+    color: var(--muted);
+  }
+
+  /* Segmented bar */
+  .hud-segments {
+    display: flex;
+    gap: 3px;
+    height: 14px;
+  }
+
+  .hud-seg {
+    flex: 1;
+    border-radius: 3px;
+    background: #e8e5e0;
+    border: 2px solid var(--dark);
+    overflow: hidden;
+    position: relative;
+    transition: background 0.3s, border-color 0.3s;
+  }
+
+  .hud-seg.done {
+    background: var(--teal);
+    border-color: var(--teal-dark);
+  }
+
+  .hud-seg.active {
+    border-color: var(--teal);
+  }
+
+  .hud-seg-fill {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    background: var(--teal);
+    border-radius: 1px;
+    transition: width 1s linear;
+  }
+
+  .hud-seg.future {
+    opacity: 0.3;
+  }
+
+  /* --- Power zone --- */
+  .hud-power {
+    padding: 20px 20px 16px;
+    text-align: center;
+    border-bottom: 2px solid var(--border-light);
+    position: relative;
+  }
+
+  .hud-power-val {
+    font-size: 72px;
+    font-weight: 900;
+    letter-spacing: -3px;
+    color: var(--dark);
+    line-height: 0.85;
+    transition: color 0.2s;
+  }
+
+  .hud-power-unit {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* Power delta tag */
+  .hud-power-delta {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    font-size: 12px;
+    font-weight: 900;
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 2px solid;
+    transition: all 0.2s;
+  }
+  .hud-power-delta.over {
+    background: var(--teal-bg);
+    color: var(--teal);
+    border-color: var(--teal);
+  }
+  .hud-power-delta.under {
+    background: var(--pink-bg);
+    color: var(--pink);
+    border-color: var(--pink);
+  }
+
+  /* Target label */
+  .hud-power-target {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+  }
+
+  .hud-power-target-label {
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .hud-power-target-val {
+    font-size: 14px;
+    font-weight: 900;
+    color: var(--teal);
+    letter-spacing: -0.5px;
+  }
+
+  /* --- Data rows (C-style icon rows) --- */
+  .hud-row {
+    display: flex;
+  }
+
+  .hud-cell {
+    flex: 1;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .hud-cell + .hud-cell {
+    border-left: 2px solid var(--border-light);
+  }
+
+  .hud-cell-icon {
+    width: 32px;
+    height: 32px;
+    border: 2.5px solid var(--dark);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+
+  .hud-cell-data {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .hud-cell-val {
+    font-size: 26px;
+    font-weight: 900;
+    letter-spacing: -1px;
+    color: var(--dark);
+    line-height: 1;
+  }
+
+  .hud-cell-label {
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  /* --- Summary pills --- */
+  .hud-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+    justify-content: space-evenly;
+  }
+
+  .hud-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    border: 2px solid var(--border-light);
+    border-radius: 6px;
+    background: var(--card);
+    white-space: nowrap;
+  }
+
+  .hud-pill-label {
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .hud-pill-val {
+    font-size: 11px;
+    font-weight: 900;
+    color: var(--dark);
+    letter-spacing: -0.3px;
+  }
+
+  /* --- Overall test progress --- */
+  .hud-progress {
+    margin-bottom: 10px;
+  }
+
+  .hud-progress-label {
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 5px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .hud-progress-label-val {
+    color: var(--dark);
+  }
+
+  .hud-progress-track {
+    height: 14px;
+    background: #e8e5e0;
+    border-radius: 5px;
+    border: 2px solid var(--dark);
+    overflow: hidden;
+  }
+
+  .hud-progress-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: var(--teal);
+    width: 0%;
+    transition: width 0.5s ease;
+  }
+</style>
+</head>
+<body>
+
+<div>
+  <h1>FTP<span class="dot">.</span>TEST</h1>
+  <div class="page-sub">Combined HUD</div>
+</div>
+
+<!-- =============================================
+     COMBINED: B segments + C unified block + C data rows
+     ============================================= -->
+<div class="concept-section">
+  <div class="concept-label">B + C Combined</div>
+  <div class="concept-desc">Unified single block from C with segmented interval bar from B. Icon-labeled HR/cadence rows. Everything in one container.</div>
+  <div class="phone-frame">
+    <div class="screen">
+      <div class="top-bar">
+        <div class="screen-title">Ramp Test</div>
+        <div class="phase-badge"><span class="live-dot"></span>Live</div>
+      </div>
+
+      <!-- THE HUD -->
+      <div class="hud">
+        <!-- Teal interval header -->
+        <div class="hud-header">
+          <span class="hud-header-stage" id="h-stage">Stage 4 — 180W</span>
+        </div>
+
+        <!-- Interval body: times + segment bar -->
+        <div class="hud-interval">
+          <div class="hud-interval-times">
+            <div class="hud-time-block">
+              <div class="hud-time-label">Done</div>
+              <div class="hud-time-val done" id="h-done">0:38</div>
+            </div>
+            <div class="hud-time-block">
+              <div class="hud-time-label">Left</div>
+              <div class="hud-time-val" id="h-left">0:22</div>
+            </div>
+          </div>
+          <div class="hud-segments" id="h-segments"></div>
+        </div>
+
+        <!-- Power -->
+        <div class="hud-power">
+          <div class="hud-power-target">
+            <div class="hud-power-target-label">Target</div>
+            <div class="hud-power-target-val" id="h-target">180W</div>
+          </div>
+          <div class="hud-power-val" id="h-power">185</div>
+          <div class="hud-power-unit">Watts</div>
+          <div class="hud-power-delta over" id="h-delta">+5</div>
+        </div>
+
+        <!-- HR + Cadence row -->
+        <div class="hud-row">
+          <div class="hud-cell">
+            <div class="hud-cell-icon" style="background:#FCE7F3;">♥</div>
+            <div class="hud-cell-data">
+              <div class="hud-cell-val" id="h-hr">148</div>
+              <div class="hud-cell-label">Heart Rate • BPM</div>
+            </div>
+          </div>
+          <div class="hud-cell">
+            <div class="hud-cell-icon" style="background:#F0FDF4;">⟳</div>
+            <div class="hud-cell-data">
+              <div class="hud-cell-val" id="h-cad">88</div>
+              <div class="hud-cell-label">Cadence • RPM</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Overall test progress -->
+      <div class="hud-progress">
+        <div class="hud-progress-label"><span>Test Progress</span><span class="hud-progress-label-val" id="h-progress-text">Stage 4 / 15</span></div>
+        <div class="hud-progress-track"><div class="hud-progress-fill" id="h-progress-fill"></div></div>
+      </div>
+
+      <!-- Summary pills -->
+      <div class="hud-pills">
+        <div class="hud-pill">
+          <span class="hud-pill-label">Time</span>
+          <span class="hud-pill-val" id="h-elapsed">08:38</span>
+        </div>
+        <div class="hud-pill">
+          <span class="hud-pill-label">Avg W</span>
+          <span class="hud-pill-val" id="h-avg-power">172</span>
+        </div>
+        <div class="hud-pill">
+          <span class="hud-pill-label">Avg HR</span>
+          <span class="hud-pill-val" id="h-avg-hr">138</span>
+        </div>
+        <div class="hud-pill">
+          <span class="hud-pill-label">Max HR</span>
+          <span class="hud-pill-val" id="h-max-hr">152</span>
+        </div>
+        <div class="hud-pill">
+          <span class="hud-pill-label">Eff</span>
+          <span class="hud-pill-val" id="h-efficiency">96%</span>
+        </div>
+      </div>
+
+      <div class="spacer"></div>
+
+      <button class="btn btn-pink" style="margin-bottom:8px;">■ Stop Test</button>
+      <button class="btn btn-outline">Finish & Calculate</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // State
+  let totalElapsed = 518;
+  let intervalSec = 38;
+  const intervalDuration = 60;
+  let targetPower = 180;
+  let stageNum = 4;
+  const totalStages = 15;
+  const numSegments = 20;
+
+  // Running averages / maxes
+  let powerSum = 172 * 518;
+  let hrSum = 138 * 518;
+  let maxHr = 152;
+  let sampleCount = 518;
+
+  function fmt(s) {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return m.toString().padStart(2, '0') + ':' + sec.toString().padStart(2, '0');
+  }
+
+  function fmtShort(s) {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return m + ':' + sec.toString().padStart(2, '0');
+  }
+
+  // Build segments
+  const segContainer = document.getElementById('h-segments');
+  for (let i = 0; i < numSegments; i++) {
+    const seg = document.createElement('div');
+    seg.className = 'hud-seg';
+    segContainer.appendChild(seg);
+  }
+
+  function updateSegments(filled) {
+    const segs = segContainer.children;
+    const filledCount = Math.floor((filled / intervalDuration) * numSegments);
+    const partialIdx = filledCount;
+    const partialPct = ((filled / intervalDuration) * numSegments - filledCount) * 100;
+
+    for (let i = 0; i < segs.length; i++) {
+      segs[i].className = 'hud-seg';
+      segs[i].innerHTML = '';
+      if (i < filledCount) {
+        segs[i].classList.add('done');
+      } else if (i === partialIdx) {
+        segs[i].classList.add('active');
+        const fill = document.createElement('div');
+        fill.className = 'hud-seg-fill';
+        fill.style.width = partialPct + '%';
+        segs[i].appendChild(fill);
+      } else {
+        segs[i].classList.add('future');
+      }
+    }
+  }
+
+  function randAround(base, range) {
+    return base + Math.floor(Math.random() * range * 2) - range;
+  }
+
+  function tick() {
+    totalElapsed++;
+    intervalSec++;
+
+    if (intervalSec >= intervalDuration) {
+      intervalSec = 0;
+      stageNum++;
+      targetPower += 20;
+      document.getElementById('h-stage').textContent = 'Stage ' + stageNum + ' \u2014 ' + targetPower + 'W';
+      document.getElementById('h-target').textContent = targetPower + 'W';
+      // Update overall progress
+      const progPct = Math.min(100, Math.round((stageNum / totalStages) * 100));
+      document.getElementById('h-progress-fill').style.width = progPct + '%';
+      document.getElementById('h-progress-text').textContent = 'Stage ' + stageNum + ' / ' + totalStages;
+    }
+
+    const done = intervalSec;
+    const left = intervalDuration - intervalSec;
+
+    const power = randAround(targetPower, 12);
+    const hr = randAround(150, 5);
+    const cad = randAround(88, 4);
+    const delta = power - targetPower;
+    const deltaStr = delta >= 0 ? '+' + delta : '' + delta;
+
+    document.getElementById('h-done').textContent = fmtShort(done);
+    document.getElementById('h-left').textContent = fmtShort(left);
+    updateSegments(done);
+    document.getElementById('h-power').textContent = power;
+    document.getElementById('h-hr').textContent = hr;
+    document.getElementById('h-cad').textContent = cad;
+    document.getElementById('h-elapsed').textContent = fmt(totalElapsed);
+
+    const deltaEl = document.getElementById('h-delta');
+    deltaEl.textContent = deltaStr;
+    deltaEl.className = 'hud-power-delta ' + (delta >= 0 ? 'over' : 'under');
+
+    // Update running stats
+    sampleCount++;
+    powerSum += power;
+    hrSum += hr;
+    if (hr > maxHr) maxHr = hr;
+
+    const avgPower = Math.round(powerSum / sampleCount);
+    const avgHr = Math.round(hrSum / sampleCount);
+    const eff = Math.round((avgPower / targetPower) * 100);
+
+    document.getElementById('h-avg-power').textContent = avgPower;
+    document.getElementById('h-avg-hr').textContent = avgHr;
+    document.getElementById('h-max-hr').textContent = maxHr;
+    document.getElementById('h-efficiency').textContent = eff + '%';
+  }
+
+  // Initial
+  updateSegments(intervalSec);
+  document.getElementById('h-progress-fill').style.width = Math.round((stageNum / totalStages) * 100) + '%';
+  document.getElementById('h-progress-text').textContent = 'Stage ' + stageNum + ' / ' + totalStages;
+
+  // Tick
+  setInterval(tick, 1000);
+</script>
+
+</body>
+</html>

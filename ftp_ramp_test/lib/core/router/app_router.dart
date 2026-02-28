@@ -14,7 +14,16 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/ramp-test',
-      builder: (context, state) => const RampTestScreen(),
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>? ?? {};
+        final autoStart = extra['autoStart'] as bool? ?? false;
+        final protocolStr = extra['protocol'] as String? ?? 'ramp';
+        final protocol = TestProtocol.values.firstWhere(
+          (p) => p.name == protocolStr,
+          orElse: () => TestProtocol.ramp,
+        );
+        return RampTestScreen(autoStart: autoStart, protocol: protocol);
+      },
     ),
     GoRoute(
       path: '/results',

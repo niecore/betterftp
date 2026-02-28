@@ -31,5 +31,4 @@ abstract final class AppColors {
   static const trainerBg = Color(0xFFFEF3C7);
   static const hrBg = Color(0xFFFCE7F3);
   static const cadenceBg = Color(0xFFF0FDF4);
-  static const speedBg = Color(0xFFE0F2FE);
 }

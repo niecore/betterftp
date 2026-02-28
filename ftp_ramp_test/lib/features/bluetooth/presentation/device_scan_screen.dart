@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:video_player/video_player.dart';
 
 import '../../../core/constants/ble_constants.dart';
 import '../../../core/constants/ftms_constants.dart';
@@ -22,37 +23,72 @@ class DeviceScanScreen extends ConsumerStatefulWidget {
   ConsumerState<DeviceScanScreen> createState() => _DeviceScanScreenState();
 }
 
-class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen> {
-  String? _connectingToId;
+class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen>
+    with SingleTickerProviderStateMixin {
   String _selectedMode = 'Ramp Test';
+  late final VideoPlayerController _hamsterController;
+  late final AnimationController _shakeController;
+  late final Animation<double> _shakeAnimation;
+  @override
+  void initState() {
+    super.initState();
+    _hamsterController =
+        VideoPlayerController.asset('assets/animations/hamster.mp4')
+          ..setLooping(true)
+          ..setVolume(0)
+          ..initialize().then((_) {
+            if (mounted) {
+              setState(() {});
+              _hamsterController.play();
+            }
+          });
+
+    _shakeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+    _shakeAnimation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 0, end: -10), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: -10, end: 10), weight: 2),
+      TweenSequenceItem(tween: Tween(begin: 10, end: -8), weight: 2),
+      TweenSequenceItem(tween: Tween(begin: -8, end: 6), weight: 2),
+      TweenSequenceItem(tween: Tween(begin: 6, end: 0), weight: 1),
+    ]).animate(CurvedAnimation(
+      parent: _shakeController,
+      curve: Curves.easeOut,
+    ));
+  }
+
+  void _shakePairingBlock() {
+    _shakeController.forward(from: 0);
+  }
+
+  @override
+  void dispose() {
+    _hamsterController.dispose();
+    _shakeController.dispose();
+    super.dispose();
+  }
 
   Future<void> _connectAsTrainer(ScannedDevice device) async {
-    setState(() => _connectingToId = device.id);
     final repository = ref.read(trainerRepositoryProvider);
     final trainer = Trainer(id: device.id, name: device.name);
     final success = await repository.connect(trainer);
-    if (mounted) {
-      setState(() => _connectingToId = null);
-      if (!success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to connect to ${device.name}')),
-        );
-      }
+    if (mounted && !success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to connect to ${device.name}')),
+      );
     }
   }
 
   Future<void> _connectAsHrMonitor(ScannedDevice device) async {
-    setState(() => _connectingToId = device.id);
     final repository = ref.read(hrRepositoryProvider);
     final monitor = HrMonitor(id: device.id, name: device.name);
     final success = await repository.connect(monitor);
-    if (mounted) {
-      setState(() => _connectingToId = null);
-      if (!success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to connect to ${device.name}')),
-        );
-      }
+    if (mounted && !success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to connect to ${device.name}')),
+      );
     }
   }
 
@@ -61,6 +97,46 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen> {
 
   bool _isHrMonitor(ScannedDevice device) =>
       device.serviceUuids.contains(BleConstants.heartRateServiceShortUuid);
+
+  /// Build signal bars widget based on RSSI value
+  Widget _buildSignalBars(int rssi) {
+    // RSSI ranges: excellent > -50, good > -70, fair > -85, weak <= -85
+    final int bars;
+    if (rssi > -50) {
+      bars = 4;
+    } else if (rssi > -70) {
+      bars = 3;
+    } else if (rssi > -85) {
+      bars = 2;
+    } else {
+      bars = 1;
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        for (int i = 0; i < 4; i++)
+          Container(
+            width: 3,
+            height: 4.0 + (i * 3),
+            margin: const EdgeInsets.only(right: 1.5),
+            decoration: BoxDecoration(
+              color: i < bars ? AppColors.teal : const Color(0xFFDDDDDD),
+              borderRadius: BorderRadius.circular(1),
+            ),
+          ),
+        const SizedBox(width: 4),
+        Text(
+          '$rssi dBm',
+          style: const TextStyle(
+            fontSize: 9,
+            color: AppColors.muted,
+          ),
+        ),
+      ],
+    );
+  }
 
   void _showDeviceSheet({required bool forHr}) {
     final scannerService = ref.read(bleScannerServiceProvider);
@@ -72,7 +148,6 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) {
-        // Start a fresh scan and pipe results directly into the sheet via StreamBuilder
         final scanStream = scannerService.scanForDevices();
 
         return StreamBuilder<List<ScannedDevice>>(
@@ -81,9 +156,12 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen> {
           builder: (ctx, snapshot) {
             final allDevices = snapshot.data ?? [];
             final relevantDevices = forHr
-                ? allDevices.where((d) => _isHrMonitor(d) && !_isTrainer(d)).toList()
+                ? allDevices
+                    .where((d) => _isHrMonitor(d) && !_isTrainer(d))
+                    .toList()
                 : allDevices.where(_isTrainer).toList();
-            final isScanning = snapshot.connectionState == ConnectionState.active;
+            final isScanning =
+                snapshot.connectionState == ConnectionState.active;
 
             return Padding(
               padding: const EdgeInsets.fromLTRB(
@@ -118,7 +196,8 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen> {
                           height: 32,
                           decoration: BoxDecoration(
                             color: AppColors.card,
-                            border: Border.all(color: AppColors.dark, width: 2),
+                            border:
+                                Border.all(color: AppColors.dark, width: 2),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           alignment: Alignment.center,
@@ -163,32 +242,31 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen> {
                       ),
                     ),
                   ...relevantDevices.map((device) {
-                    final isConnecting = _connectingToId == device.id;
                     return GestureDetector(
-                      onTap: isConnecting
-                          ? null
-                          : () async {
+                      onTap: () {
                               scannerService.stopScan();
+                              Navigator.pop(ctx);
                               if (forHr) {
-                                await _connectAsHrMonitor(device);
+                                _connectAsHrMonitor(device);
                               } else {
-                                await _connectAsTrainer(device);
+                                _connectAsTrainer(device);
                               }
-                              if (ctx.mounted) Navigator.pop(ctx);
                             },
                       child: Container(
                         margin: const EdgeInsets.only(bottom: 8),
                         padding: const EdgeInsets.all(AppSpacing.lg),
                         decoration: BoxDecoration(
                           color: AppColors.card,
-                          border: Border.all(color: AppColors.dark, width: 3),
+                          border:
+                              Border.all(color: AppColors.dark, width: 3),
                           borderRadius: BorderRadius.circular(14),
                         ),
                         child: Row(
                           children: [
                             Expanded(
                               child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     device.name,
@@ -209,15 +287,7 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen> {
                                 ],
                               ),
                             ),
-                            if (isConnecting)
-                              const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: AppColors.teal,
-                                ),
-                              ),
+                            _buildSignalBars(device.rssi),
                           ],
                         ),
                       ),
@@ -260,7 +330,7 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  'Select Mode',
+                  'Select Protocol',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
@@ -395,6 +465,18 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen> {
         ) ??
         false;
 
+    // Live data
+    final trainerData = ref.watch(trainerDataProvider);
+    final hrData = ref.watch(hrDataProvider);
+    final trainerName = ref.watch(connectedTrainerNameProvider);
+    final hrName = ref.watch(connectedHrNameProvider);
+
+    final liveCadence = trainerConnected
+        ? trainerData.whenOrNull(data: (d) => d.cadence)
+        : null;
+    final liveHr =
+        hrConnected ? hrData.whenOrNull(data: (d) => d.heartRate) : null;
+
     return Scaffold(
       backgroundColor: AppColors.bg,
       body: SafeArea(
@@ -408,31 +490,41 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Logo
               _buildLogo(),
               const SizedBox(height: 22),
-
-              // Mode selector block
               _buildModeSelector(),
-
-              // Pairing block
-              _buildPairingBlock(
-                trainerConnected: trainerConnected,
-                trainerConnecting: trainerConnecting,
-                hrConnected: hrConnected,
-                hrConnecting: hrConnecting,
+              AnimatedBuilder(
+                animation: _shakeAnimation,
+                builder: (context, child) => Transform.translate(
+                  offset: Offset(_shakeAnimation.value, 0),
+                  child: child,
+                ),
+                child: _buildPairingBlock(
+                  trainerConnected: trainerConnected,
+                  trainerConnecting: trainerConnecting,
+                  hrConnected: hrConnected,
+                  hrConnecting: hrConnecting,
+                  trainerName: trainerName,
+                  hrName: hrName,
+                  liveCadence: liveCadence,
+                  liveHr: liveHr,
+                ),
               ),
-
               const Spacer(),
-
-              // Start Test button
               AppButton(
                 label: 'Start Test',
                 variant: AppButtonVariant.primary,
                 prefixIcon: '\u25B6',
                 onPressed: trainerConnected
-                    ? () => context.go('/ramp-test')
-                    : null,
+                    ? () => context.go('/ramp-test', extra: {
+                          'autoStart': true,
+                          'protocol': _selectedMode == '20 Min Test'
+                              ? 'twentyMin'
+                              : _selectedMode == '8 Min Test'
+                                  ? 'eightMin'
+                                  : 'ramp',
+                        })
+                    : () => _shakePairingBlock(),
               ),
             ],
           ),
@@ -442,46 +534,78 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen> {
   }
 
   Widget _buildLogo() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        RichText(
-          text: const TextSpan(
-            style: TextStyle(
-              fontFamily: 'Iosevka',
-              fontSize: 52,
-              fontWeight: FontWeight.w900,
-              letterSpacing: -2,
-              height: 0.92,
+    const double badgeSize = 180;
+
+    return Center(
+      child: Column(
+        children: [
+          // Circle video badge
+          Container(
+            width: badgeSize,
+            height: badgeSize,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.dark, width: 3),
             ),
-            children: [
-              TextSpan(
-                text: 'FTP',
-                style: TextStyle(color: AppColors.teal),
-              ),
-              TextSpan(
-                text: '.',
-                style: TextStyle(color: AppColors.pink),
-              ),
-              TextSpan(text: '\n'),
-              TextSpan(
-                text: 'TEST',
-                style: TextStyle(color: AppColors.teal),
-              ),
-            ],
+            child: ClipOval(
+              child: _hamsterController.value.isInitialized
+                  ? ColorFiltered(
+                      colorFilter: const ColorFilter.mode(
+                        AppColors.bg,
+                        BlendMode.multiply,
+                      ),
+                      child: FittedBox(
+                        fit: BoxFit.cover,
+                        child: SizedBox(
+                          width: _hamsterController.value.size.width,
+                          height: _hamsterController.value.size.height,
+                          child: VideoPlayer(_hamsterController),
+                        ),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          'POWER LAB',
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            letterSpacing: 4,
-            color: Color(0xFFCCCCCC),
+          const SizedBox(height: 16),
+          // Wordmark
+          RichText(
+            textAlign: TextAlign.center,
+            text: const TextSpan(
+              style: TextStyle(
+                fontFamily: 'Iosevka',
+                fontSize: 52,
+                fontWeight: FontWeight.w900,
+                letterSpacing: -2,
+                height: 0.92,
+              ),
+              children: [
+                TextSpan(
+                  text: 'BETTER',
+                  style: TextStyle(color: AppColors.teal),
+                ),
+                TextSpan(
+                  text: '.',
+                  style: TextStyle(color: AppColors.pink),
+                ),
+                TextSpan(
+                  text: 'FTP',
+                  style: TextStyle(color: AppColors.teal),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+          const SizedBox(height: 6),
+          const Text(
+            'betterftp.cc',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 4,
+              color: Color(0xFFCCCCCC),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -494,50 +618,53 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen> {
           border: Border.all(color: AppColors.dark, width: 3),
           borderRadius: BorderRadius.circular(14),
         ),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-              color: AppColors.teal,
-              child: const Text(
-                'SELECT MODE',
-                style: TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 2,
-                  color: Colors.white,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(11),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                color: AppColors.teal,
+                child: const Text(
+                  'SELECT PROTOCOL',
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 2,
+                    color: Colors.white,
+                  ),
                 ),
               ),
-            ),
-            Container(
-              color: AppColors.card,
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    _selectedMode,
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -1,
-                      color: AppColors.dark,
+              Container(
+                color: AppColors.card,
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      _selectedMode,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -1,
+                        color: AppColors.dark,
+                      ),
                     ),
-                  ),
-                  const Text(
-                    '\u203A',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: AppColors.muted,
+                    const Text(
+                      '\u203A',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: AppColors.muted,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -548,6 +675,10 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen> {
     required bool trainerConnecting,
     required bool hrConnected,
     required bool hrConnecting,
+    required String? trainerName,
+    required String? hrName,
+    required int? liveCadence,
+    required int? liveHr,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -555,57 +686,73 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen> {
         border: Border.all(color: AppColors.dark, width: 3),
         borderRadius: BorderRadius.circular(14),
       ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Header
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-            color: AppColors.pink,
-            child: const Text(
-              'PAIRING',
-              style: TextStyle(
-                fontSize: 9,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 2,
-                color: Colors.white,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(11),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+              color: AppColors.pink,
+              child: const Text(
+                'PAIRING',
+                style: TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 2,
+                  color: Colors.white,
+                ),
               ),
             ),
-          ),
-          // Trainer row
-          Container(
-            color: AppColors.card,
-            child: Column(
-              children: [
-                _buildPairRow(
-                  icon: const IconBox.trainer(),
-                  name: 'Trainer',
-                  isConnected: trainerConnected,
-                  isConnecting: trainerConnecting,
-                  onTap: trainerConnected
-                      ? () => ref.read(trainerRepositoryProvider).disconnect()
-                      : () => _showDeviceSheet(forHr: false),
-                ),
-                Container(
-                  height: 2,
-                  color: AppColors.borderLight,
-                  margin: const EdgeInsets.symmetric(horizontal: 16),
-                ),
-                _buildPairRow(
-                  icon: const IconBox.hr(),
-                  name: 'Heart Rate',
-                  isConnected: hrConnected,
-                  isConnecting: hrConnecting,
-                  onTap: hrConnected
-                      ? () => ref.read(hrRepositoryProvider).disconnect()
-                      : () => _showDeviceSheet(forHr: true),
-                ),
-              ],
+            Container(
+              color: AppColors.card,
+              child: Column(
+                children: [
+                  _buildPairRow(
+                    icon: trainerConnected &&
+                            liveCadence != null &&
+                            liveCadence > 0
+                        ? const SpinningIconBox.trainer()
+                        : const IconBox.trainer(),
+                    name: 'Trainer',
+                    deviceName: trainerName,
+                    isConnected: trainerConnected,
+                    isConnecting: trainerConnecting,
+                    liveValue: trainerConnected && liveCadence != null
+                        ? '$liveCadence RPM'
+                        : null,
+                    onTap: trainerConnected
+                        ? () =>
+                            ref.read(trainerRepositoryProvider).disconnect()
+                        : () => _showDeviceSheet(forHr: false),
+                  ),
+                  Container(
+                    height: 2,
+                    color: AppColors.borderLight,
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                  ),
+                  _buildPairRow(
+                    icon: hrConnected && liveHr != null && liveHr > 0
+                        ? const PulsingIconBox.hr()
+                        : const IconBox.hr(),
+                    name: 'Heart Rate',
+                    deviceName: hrName,
+                    isConnected: hrConnected,
+                    isConnecting: hrConnecting,
+                    liveValue: hrConnected && liveHr != null
+                        ? '$liveHr BPM'
+                        : null,
+                    onTap: hrConnected
+                        ? () => ref.read(hrRepositoryProvider).disconnect()
+                        : () => _showDeviceSheet(forHr: true),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -613,9 +760,11 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen> {
   Widget _buildPairRow({
     required Widget icon,
     required String name,
+    required String? deviceName,
     required bool isConnected,
     required bool isConnecting,
     required VoidCallback onTap,
+    String? liveValue,
   }) {
     return GestureDetector(
       onTap: onTap,
@@ -631,7 +780,7 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    name,
+                    isConnected && deviceName != null ? deviceName : name,
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
@@ -640,11 +789,12 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    isConnected
-                        ? '\u25CF Connected'
-                        : isConnecting
-                            ? '\u25CB Connecting...'
-                            : '\u25CB Tap to scan',
+                    liveValue ??
+                        (isConnected
+                            ? '\u25CF Connected'
+                            : isConnecting
+                                ? '\u25CB Connecting...'
+                                : '\u25CB Tap to scan'),
                     style: TextStyle(
                       fontSize: 9,
                       letterSpacing: 1,
@@ -671,3 +821,4 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen> {
     );
   }
 }
+

@@ -12,7 +12,14 @@ import '../domain/ramp_test_state.dart';
 import 'ramp_test_controller.dart';
 
 class RampTestScreen extends ConsumerStatefulWidget {
-  const RampTestScreen({super.key});
+  final bool autoStart;
+  final TestProtocol protocol;
+
+  const RampTestScreen({
+    super.key,
+    this.autoStart = false,
+    this.protocol = TestProtocol.ramp,
+  });
 
   @override
   ConsumerState<RampTestScreen> createState() => _RampTestScreenState();
@@ -20,14 +27,28 @@ class RampTestScreen extends ConsumerStatefulWidget {
 
 class _RampTestScreenState extends ConsumerState<RampTestScreen> {
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Reset state so a fresh test can start
+      ref.invalidate(rampTestControllerProvider);
+      if (widget.autoStart) {
+        WakelockPlus.enable();
+        ref.read(rampTestControllerProvider.notifier).start(widget.protocol);
+      }
+    });
+  }
+
+  @override
   void dispose() {
     WakelockPlus.disable();
     super.dispose();
   }
 
   String _formatTime(int totalSeconds) {
-    final minutes = totalSeconds ~/ 60;
-    final seconds = totalSeconds % 60;
+    final clamped = totalSeconds.clamp(0, 99999);
+    final minutes = clamped ~/ 60;
+    final seconds = clamped % 60;
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 
@@ -43,14 +64,21 @@ class _RampTestScreenState extends ConsumerState<RampTestScreen> {
       }
     });
 
-    final isRunning =
-        state.phase == RampTestPhase.warmup ||
-        state.phase == RampTestPhase.ramping;
+    final isRunning = state.phase == RampTestPhase.warmup ||
+        state.phase == RampTestPhase.ramping ||
+        state.phase == RampTestPhase.sustained;
     final isWarmup = state.phase == RampTestPhase.warmup;
-    final progress = state.elapsedSeconds > 0
-        ? (state.elapsedSeconds / 1200).clamp(0.0, 1.0)
-        : 0.0;
-    final progressPct = (progress * 100).round();
+    final isRamping = state.phase == RampTestPhase.ramping;
+    final isSustained = state.phase == RampTestPhase.sustained;
+
+    // Countdown values
+    final warmupRemaining =
+        state.warmupDuration - state.stageElapsedSeconds;
+    final stageRemaining =
+        state.stageDuration - state.stageElapsedSeconds;
+    final sustainedRemaining = state.testDuration > 0
+        ? state.testDuration - state.sustainedElapsedSeconds
+        : 0;
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -92,72 +120,82 @@ class _RampTestScreenState extends ConsumerState<RampTestScreen> {
                   border: Border.all(color: AppColors.dark, width: 3),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                clipBehavior: Clip.antiAlias,
-                child: Column(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 10,
-                        horizontal: 16,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(11),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 10,
+                          horizontal: 16,
+                        ),
+                        color: AppColors.teal,
+                        width: double.infinity,
+                        child: const Row(
+                          children: [
+                            Text(
+                              '\u23F1',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.white,
+                              ),
+                            ),
+                            SizedBox(width: 6),
+                            Text(
+                              'ELAPSED TIME',
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 2,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      color: AppColors.teal,
-                      width: double.infinity,
-                      child: const Row(
-                        children: [
-                          Text(
-                            '\u23F1',
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: Colors.white,
+                      Container(
+                        color: AppColors.card,
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 18, horizontal: 16),
+                        width: double.infinity,
+                        child: Column(
+                          children: [
+                            Text(
+                              _formatTime(state.elapsedSeconds),
+                              style: const TextStyle(
+                                fontSize: 52,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -2,
+                                height: 1,
+                                color: AppColors.dark,
+                              ),
                             ),
-                          ),
-                          SizedBox(width: 6),
-                          Text(
-                            'ELAPSED TIME',
-                            style: TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 2,
-                              color: Colors.white,
+                            const SizedBox(height: 2),
+                            Text(
+                              isWarmup
+                                  ? 'WARMUP PHASE'
+                                  : isRamping
+                                      ? 'RAMP PHASE'
+                                      : isSustained
+                                          ? '${state.protocol.label.toUpperCase()} PHASE'
+                                          : 'READY',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 2,
+                                color: AppColors.muted,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                    Container(
-                      color: AppColors.card,
-                      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
-                      width: double.infinity,
-                      child: Column(
-                        children: [
-                          Text(
-                            _formatTime(state.elapsedSeconds),
-                            style: const TextStyle(
-                              fontSize: 52,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -2,
-                              height: 1,
-                              color: AppColors.dark,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'of ~20:00 est.',
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: AppColors.muted,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 10),
 
-              // Warmup bar (only during warmup)
+              // Warmup bar (only during warmup) — countdown
               if (isWarmup)
                 Container(
                   margin: const EdgeInsets.only(bottom: 10),
@@ -175,9 +213,9 @@ class _RampTestScreenState extends ConsumerState<RampTestScreen> {
                     children: [
                       Row(
                         children: [
-                          const Text(
-                            'WARMUP',
-                            style: TextStyle(
+                          Text(
+                            _formatTime(warmupRemaining),
+                            style: const TextStyle(
                               fontSize: 9,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 1,
@@ -185,9 +223,35 @@ class _RampTestScreenState extends ConsumerState<RampTestScreen> {
                             ),
                           ),
                           const SizedBox(width: 10),
+                          // - button
+                          GestureDetector(
+                            onTap: () =>
+                                controller.adjustPower(-10),
+                            child: Container(
+                              width: 30,
+                              height: 30,
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                    color: AppColors.dark, width: 2),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              alignment: Alignment.center,
+                              child: const Text(
+                                '\u2212',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w900,
+                                  color: AppColors.dark,
+                                  height: 1,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
                           RichText(
                             text: TextSpan(
-                              style: const TextStyle(fontFamily: 'Iosevka'),
+                              style:
+                                  const TextStyle(fontFamily: 'Iosevka'),
                               children: [
                                 TextSpan(
                                   text: '${state.targetPower}',
@@ -207,6 +271,31 @@ class _RampTestScreenState extends ConsumerState<RampTestScreen> {
                               ],
                             ),
                           ),
+                          const SizedBox(width: 8),
+                          // + button
+                          GestureDetector(
+                            onTap: () =>
+                                controller.adjustPower(10),
+                            child: Container(
+                              width: 30,
+                              height: 30,
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                    color: AppColors.dark, width: 2),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              alignment: Alignment.center,
+                              child: const Text(
+                                '+',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w900,
+                                  color: AppColors.dark,
+                                  height: 1,
+                                ),
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                       GestureDetector(
@@ -218,7 +307,8 @@ class _RampTestScreenState extends ConsumerState<RampTestScreen> {
                           ),
                           decoration: BoxDecoration(
                             color: AppColors.dark,
-                            border: Border.all(color: AppColors.dark, width: 2),
+                            border: Border.all(
+                                color: AppColors.dark, width: 2),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: const Text(
@@ -236,7 +326,189 @@ class _RampTestScreenState extends ConsumerState<RampTestScreen> {
                   ),
                 ),
 
-              // 2x2 stat grid
+              // Stage bar (only during ramping) — with countdown
+              if (isRamping)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 12,
+                    horizontal: 16,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.tealBg,
+                    border: Border.all(color: AppColors.teal, width: 3),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'STAGE ${state.currentStage + 1}',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1,
+                          color: AppColors.teal,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        '\u2014',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppColors.muted,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${state.targetPower} W',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1,
+                          color: AppColors.teal,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        '\u2014',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppColors.muted,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        _formatTime(stageRemaining),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1,
+                          color: AppColors.teal,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+              // Sustained bar (20min/8min) — power control + progress
+              if (isSustained)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 12,
+                    horizontal: 16,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.card,
+                    border: Border.all(color: AppColors.dark, width: 3),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          GestureDetector(
+                            onTap: () => controller.adjustPower(-10),
+                            child: Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                    color: AppColors.dark, width: 2),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              alignment: Alignment.center,
+                              child: const Text(
+                                '\u2212',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                  color: AppColors.dark,
+                                  height: 1,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          RichText(
+                            text: TextSpan(
+                              style:
+                                  const TextStyle(fontFamily: 'Iosevka'),
+                              children: [
+                                TextSpan(
+                                  text: '${state.targetPower}',
+                                  style: const TextStyle(
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.w900,
+                                    color: AppColors.dark,
+                                  ),
+                                ),
+                                const TextSpan(
+                                  text: ' W',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: AppColors.muted,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          GestureDetector(
+                            onTap: () => controller.adjustPower(10),
+                            child: Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                    color: AppColors.dark, width: 2),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              alignment: Alignment.center,
+                              child: const Text(
+                                '+',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                  color: AppColors.dark,
+                                  height: 1,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (state.testDuration > 0) ...[
+                        const SizedBox(height: 12),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: state.sustainedElapsedSeconds /
+                                state.testDuration,
+                            minHeight: 8,
+                            backgroundColor: AppColors.borderLight,
+                            valueColor: const AlwaysStoppedAnimation<Color>(
+                                AppColors.teal),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          '${_formatTime(sustainedRemaining)} remaining',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1,
+                            color: AppColors.muted,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+
+              // Single row of 3 stat cards
               Row(
                 children: [
                   Expanded(
@@ -254,76 +526,12 @@ class _RampTestScreenState extends ConsumerState<RampTestScreen> {
                       unit: 'BPM',
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
+                  const SizedBox(width: 8),
                   Expanded(
                     child: StatCard(
                       type: StatCardType.cadence,
                       value: '${state.currentCadence}',
                       unit: 'RPM',
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: StatCard(
-                      type: StatCardType.speed,
-                      value: '${state.currentStage + 1}',
-                      unit: 'STAGE',
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-
-              // Progress bar
-              Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'PROGRESS',
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1,
-                          color: AppColors.muted,
-                        ),
-                      ),
-                      Text(
-                        '$progressPct%',
-                        style: const TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1,
-                          color: AppColors.muted,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 5),
-                  Container(
-                    height: 10,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE8E5E0),
-                      border: Border.all(color: AppColors.dark, width: 2),
-                      borderRadius: BorderRadius.circular(5),
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: FractionallySizedBox(
-                        widthFactor: progress.toDouble(),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: AppColors.teal,
-                            borderRadius: BorderRadius.circular(3),
-                          ),
-                        ),
-                      ),
                     ),
                   ),
                 ],
@@ -339,7 +547,7 @@ class _RampTestScreenState extends ConsumerState<RampTestScreen> {
                   prefixIcon: '\u25B6',
                   onPressed: () {
                     WakelockPlus.enable();
-                    controller.start();
+                    controller.start(widget.protocol);
                   },
                 ),
               ] else if (isRunning) ...[

@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FTP.TEST — Summary Options</title>
+<style>
+  @font-face { font-family: 'Iosevka'; font-style: normal; font-display: swap; font-weight: 400;
+    src: url(https://cdn.jsdelivr.net/fontsource/fonts/iosevka@latest/latin-400-normal.woff2) format('woff2'); }
+  @font-face { font-family: 'Iosevka'; font-style: normal; font-display: swap; font-weight: 500;
+    src: url(https://cdn.jsdelivr.net/fontsource/fonts/iosevka@latest/latin-500-normal.woff2) format('woff2'); }
+  @font-face { font-family: 'Iosevka'; font-style: normal; font-display: swap; font-weight: 700;
+    src: url(https://cdn.jsdelivr.net/fontsource/fonts/iosevka@latest/latin-700-normal.woff2) format('woff2'); }
+  @font-face { font-family: 'Iosevka'; font-style: normal; font-display: swap; font-weight: 900;
+    src: url(https://cdn.jsdelivr.net/fontsource/fonts/iosevka@latest/latin-900-normal.woff2) format('woff2'); }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --teal: #0D9488;
+    --teal-dark: #0F766E;
+    --teal-bg: rgba(13,148,136,0.06);
+    --teal-light: #5EEAD4;
+    --pink: #EC4899;
+    --pink-bg: rgba(236,72,153,0.06);
+    --yellow: #FACC15;
+    --yellow-deep: #EAB308;
+    --dark: #1a1a1a;
+    --bg: #F5F5F0;
+    --card: #fff;
+    --muted: #aaa;
+    --border-light: #f0f0f0;
+    --font: 'Iosevka', monospace;
+  }
+
+  body {
+    background: #E8E4DF;
+    font-family: var(--font);
+    padding: 40px 20px 80px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 50px;
+  }
+
+  h1 { font-size: 32px; font-weight: 900; color: var(--teal); letter-spacing: -2px; text-align: center; }
+  h1 .dot { color: var(--pink); }
+  .page-sub { font-size: 11px; font-weight: 500; letter-spacing: 4px; text-transform: uppercase; color: #ccc; text-align: center; margin-top: 4px; }
+
+  .options-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+  }
+
+  .option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .option-label {
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--dark);
+    padding: 5px 14px;
+    border: 3px solid var(--dark);
+    border-radius: 8px;
+    background: var(--card);
+  }
+
+  .option-desc {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+    max-width: 340px;
+    text-align: center;
+    line-height: 1.5;
+  }
+
+  /* Isolate just the summary area — render in a small frame */
+  .summary-frame {
+    width: 331px;
+    background: var(--bg);
+    border-radius: 14px;
+    padding: 12px 0 0;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.04);
+    overflow: hidden;
+  }
+
+  .summary-context {
+    padding: 0 22px;
+    margin-bottom: 8px;
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  .summary-area {
+    padding: 0 22px 22px;
+  }
+
+  /* ============================
+     OPTION 1 — PILL TICKER
+     Inline tag-style chips in a wrapping row
+     ============================ */
+  .pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    border: 2px solid var(--border-light);
+    border-radius: 6px;
+    background: var(--card);
+  }
+
+  .pill-label {
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .pill-val {
+    font-size: 11px;
+    font-weight: 900;
+    color: var(--dark);
+    letter-spacing: -0.3px;
+  }
+
+  /* ============================
+     OPTION 2 — MINI GRID
+     2×3 grid of tiny bordered cells
+     ============================ */
+  .mini-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+  }
+
+  .mini-cell {
+    border: 2.5px solid var(--dark);
+    border-radius: 10px;
+    padding: 8px 6px;
+    background: var(--card);
+    text-align: center;
+  }
+
+  .mini-cell-val {
+    font-size: 14px;
+    font-weight: 900;
+    color: var(--dark);
+    letter-spacing: -0.5px;
+    line-height: 1;
+  }
+
+  .mini-cell-label {
+    font-size: 7px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+
+  /* ============================
+     OPTION 3 — TICKER TAPE
+     Single horizontal scrolling-style monospace line
+     ============================ */
+  .ticker {
+    border: 2.5px solid var(--dark);
+    border-radius: 10px;
+    background: var(--card);
+    padding: 10px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    overflow: hidden;
+  }
+
+  .ticker-item {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+  }
+
+  .ticker-label {
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .ticker-val {
+    font-size: 13px;
+    font-weight: 900;
+    color: var(--dark);
+    letter-spacing: -0.3px;
+  }
+
+  .ticker-sep {
+    color: var(--border-light);
+    font-size: 14px;
+    font-weight: 400;
+    margin: 0 2px;
+  }
+
+  /* ============================
+     OPTION 4 — SPLIT BLOCK
+     Two side-by-side mini blocks (elapsed big + stats compact)
+     ============================ */
+  .split {
+    display: flex;
+    gap: 8px;
+  }
+
+  .split-left {
+    border: 3px solid var(--dark);
+    border-radius: 14px;
+    overflow: hidden;
+    flex: 0 0 110px;
+  }
+
+  .split-left-head {
+    padding: 6px 10px;
+    background: var(--dark);
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #fff;
+    text-align: center;
+  }
+
+  .split-left-body {
+    background: var(--card);
+    padding: 10px 8px;
+    text-align: center;
+  }
+
+  .split-left-val {
+    font-size: 22px;
+    font-weight: 900;
+    letter-spacing: -1px;
+    color: var(--dark);
+    line-height: 1;
+  }
+
+  .split-right {
+    flex: 1;
+    border: 2.5px solid var(--dark);
+    border-radius: 10px;
+    background: var(--card);
+    overflow: hidden;
+  }
+
+  .split-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 12px;
+  }
+
+  .split-row + .split-row {
+    border-top: 1.5px solid var(--border-light);
+  }
+
+  .split-row-label {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+  }
+
+  .split-row-val {
+    font-size: 11px;
+    font-weight: 900;
+    color: var(--dark);
+    letter-spacing: -0.3px;
+  }
+
+  @keyframes blink-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+</style>
+</head>
+<body>
+
+<div>
+  <h1>FTP<span class="dot">.</span>TEST</h1>
+  <div class="page-sub">Summary Options</div>
+</div>
+
+<div class="options-grid">
+
+  <!-- OPTION 1 — PILL TICKER -->
+  <div class="option">
+    <div class="option-label">1 — Pills</div>
+    <div class="option-desc">Wrapping tag-style chips. Light borders, very compact. Feels like metadata tags below the HUD.</div>
+    <div class="summary-frame">
+      <div class="summary-context">↑ HUD above ↑</div>
+      <div class="summary-area">
+        <div class="pills">
+          <div class="pill">
+            <span class="pill-label">Time</span>
+            <span class="pill-val" id="p1-elapsed">08:38</span>
+          </div>
+          <div class="pill">
+            <span class="pill-label">Avg W</span>
+            <span class="pill-val" id="p1-avgw">172</span>
+          </div>
+          <div class="pill">
+            <span class="pill-label">Avg HR</span>
+            <span class="pill-val" id="p1-avghr">138</span>
+          </div>
+          <div class="pill">
+            <span class="pill-label">Max HR</span>
+            <span class="pill-val" id="p1-maxhr">152</span>
+          </div>
+          <div class="pill">
+            <span class="pill-label">Eff</span>
+            <span class="pill-val" id="p1-eff">96%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPTION 2 — MINI GRID -->
+  <div class="option">
+    <div class="option-label">2 — Mini Grid</div>
+    <div class="option-desc">2×3 grid of small bordered cells. Each stat gets its own box. Structured and on-brand.</div>
+    <div class="summary-frame">
+      <div class="summary-context">↑ HUD above ↑</div>
+      <div class="summary-area">
+        <div class="mini-grid">
+          <div class="mini-cell">
+            <div class="mini-cell-val" id="p2-elapsed">08:38</div>
+            <div class="mini-cell-label">Elapsed</div>
+          </div>
+          <div class="mini-cell">
+            <div class="mini-cell-val" id="p2-avgw">172W</div>
+            <div class="mini-cell-label">Avg W</div>
+          </div>
+          <div class="mini-cell">
+            <div class="mini-cell-val" id="p2-eff">96%</div>
+            <div class="mini-cell-label">Eff</div>
+          </div>
+          <div class="mini-cell">
+            <div class="mini-cell-val" id="p2-avghr">138</div>
+            <div class="mini-cell-label">Avg HR</div>
+          </div>
+          <div class="mini-cell">
+            <div class="mini-cell-val" id="p2-maxhr">152</div>
+            <div class="mini-cell-label">Max HR</div>
+          </div>
+          <div class="mini-cell">
+            <div class="mini-cell-val" id="p2-maxw">192W</div>
+            <div class="mini-cell-label">Max W</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPTION 3 — TICKER TAPE -->
+  <div class="option">
+    <div class="option-label">3 — Ticker</div>
+    <div class="option-desc">Single bordered row. All stats inline separated by dividers. Minimal footprint, monospace data-feed vibe.</div>
+    <div class="summary-frame">
+      <div class="summary-context">↑ HUD above ↑</div>
+      <div class="summary-area">
+        <div class="ticker">
+          <div class="ticker-item">
+            <span class="ticker-label">T</span>
+            <span class="ticker-val" id="p3-elapsed">08:38</span>
+          </div>
+          <span class="ticker-sep">│</span>
+          <div class="ticker-item">
+            <span class="ticker-label">Avg</span>
+            <span class="ticker-val" id="p3-avgw">172W</span>
+          </div>
+          <span class="ticker-sep">│</span>
+          <div class="ticker-item">
+            <span class="ticker-label">HR</span>
+            <span class="ticker-val" id="p3-avghr">138</span>
+          </div>
+          <span class="ticker-sep">│</span>
+          <div class="ticker-item">
+            <span class="ticker-label">Max</span>
+            <span class="ticker-val" id="p3-maxhr">152</span>
+          </div>
+          <span class="ticker-sep">│</span>
+          <div class="ticker-item">
+            <span class="ticker-label">Eff</span>
+            <span class="ticker-val" id="p3-eff">96%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPTION 4 — SPLIT BLOCK -->
+  <div class="option">
+    <div class="option-label">4 — Split</div>
+    <div class="option-desc">Elapsed gets its own mini block with dark header. Remaining stats stacked in a compact list beside it.</div>
+    <div class="summary-frame">
+      <div class="summary-context">↑ HUD above ↑</div>
+      <div class="summary-area">
+        <div class="split">
+          <div class="split-left">
+            <div class="split-left-head">Elapsed</div>
+            <div class="split-left-body">
+              <div class="split-left-val" id="p4-elapsed">08:38</div>
+            </div>
+          </div>
+          <div class="split-right">
+            <div class="split-row">
+              <span class="split-row-label">Avg Power</span>
+              <span class="split-row-val" id="p4-avgw">172W</span>
+            </div>
+            <div class="split-row">
+              <span class="split-row-label">Avg HR</span>
+              <span class="split-row-val" id="p4-avghr">138</span>
+            </div>
+            <div class="split-row">
+              <span class="split-row-label">Max HR</span>
+              <span class="split-row-val" id="p4-maxhr">152</span>
+            </div>
+            <div class="split-row">
+              <span class="split-row-label">Efficiency</span>
+              <span class="split-row-val" id="p4-eff">96%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let totalElapsed = 518;
+  let powerSum = 172 * 518;
+  let hrSum = 138 * 518;
+  let maxHr = 152;
+  let sampleCount = 518;
+  const targetPower = 180;
+
+  function fmt(s) {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return m.toString().padStart(2, '0') + ':' + sec.toString().padStart(2, '0');
+  }
+
+  function randAround(base, range) {
+    return base + Math.floor(Math.random() * range * 2) - range;
+  }
+
+  function tick() {
+    totalElapsed++;
+    const power = randAround(targetPower, 12);
+    const hr = randAround(150, 5);
+    sampleCount++;
+    powerSum += power;
+    hrSum += hr;
+    if (hr > maxHr) maxHr = hr;
+
+    const avgPower = Math.round(powerSum / sampleCount);
+    const avgHr = Math.round(hrSum / sampleCount);
+    const eff = Math.round((avgPower / targetPower) * 100);
+    const elapsed = fmt(totalElapsed);
+
+    // Option 1
+    document.getElementById('p1-elapsed').textContent = elapsed;
+    document.getElementById('p1-avgw').textContent = avgPower;
+    document.getElementById('p1-avghr').textContent = avgHr;
+    document.getElementById('p1-maxhr').textContent = maxHr;
+    document.getElementById('p1-eff').textContent = eff + '%';
+
+    // Option 2
+    document.getElementById('p2-elapsed').textContent = elapsed;
+    document.getElementById('p2-avgw').textContent = avgPower + 'W';
+    document.getElementById('p2-avghr').textContent = avgHr;
+    document.getElementById('p2-maxhr').textContent = maxHr;
+    document.getElementById('p2-eff').textContent = eff + '%';
+
+    // Option 3
+    document.getElementById('p3-elapsed').textContent = elapsed;
+    document.getElementById('p3-avgw').textContent = avgPower + 'W';
+    document.getElementById('p3-avghr').textContent = avgHr;
+    document.getElementById('p3-maxhr').textContent = maxHr;
+    document.getElementById('p3-eff').textContent = eff + '%';
+
+    // Option 4
+    document.getElementById('p4-elapsed').textContent = elapsed;
+    document.getElementById('p4-avgw').textContent = avgPower + 'W';
+    document.getElementById('p4-avghr').textContent = avgHr;
+    document.getElementById('p4-maxhr').textContent = maxHr;
+    document.getElementById('p4-eff').textContent = eff + '%';
+  }
+
+  setInterval(tick, 1000);
+</script>
+
+</body>
+</html>

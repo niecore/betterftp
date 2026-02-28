@@ -38,35 +38,37 @@ class BlockCard extends StatelessWidget {
             border: Border.all(color: AppColors.dark, width: 3),
             borderRadius: BorderRadius.circular(14),
           ),
-          clipBehavior: Clip.antiAlias,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Header
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 10,
-                  horizontal: AppSpacing.lg,
-                ),
-                color: _headerBg,
-                child: Text(
-                  headerLabel.toUpperCase(),
-                  style: const TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 2,
-                    color: Colors.white,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(11),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Header
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 10,
+                    horizontal: AppSpacing.lg,
+                  ),
+                  color: _headerBg,
+                  child: Text(
+                    headerLabel.toUpperCase(),
+                    style: const TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 2,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
-              ),
-              // Body
-              Container(
-                color: AppColors.card,
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                child: child,
-              ),
-            ],
+                // Body
+                Container(
+                  color: AppColors.card,
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  child: child,
+                ),
+              ],
+            ),
           ),
         ),
       ),
