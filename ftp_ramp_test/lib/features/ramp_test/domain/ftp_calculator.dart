@@ -66,9 +66,6 @@ class FtpCalculator {
       case TestProtocol.twentyMin:
         final avg = averagePower(readings);
         return (avg * 0.95).round();
-      case TestProtocol.eightMin:
-        final avg = averagePower(readings);
-        return (avg * 0.90).round();
     }
   }
 }

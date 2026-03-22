@@ -39,31 +39,11 @@ class ResultsScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       // Header
-                      Center(
+                      const Center(
                         child: Column(
                           children: [
-                            const SizedBox(height: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 6,
-                                horizontal: 16,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.teal,
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: const Text(
-                                '\u2713 TEST COMPLETE',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 2,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            const Text(
+                            SizedBox(height: 8),
+                            Text(
                               'Your Results',
                               style: TextStyle(
                                 fontSize: 22,
@@ -383,13 +363,6 @@ class ResultsScreen extends StatelessWidget {
 
               // Buttons pinned at bottom
               const SizedBox(height: 10),
-              AppButton(
-                label: 'Save Result',
-                variant: AppButtonVariant.teal,
-                prefixIcon: '\u2713',
-                onPressed: () => context.go('/'),
-              ),
-              const SizedBox(height: 8),
               AppButton(
                 label: '\u2190 Back to Home',
                 variant: AppButtonVariant.outline,

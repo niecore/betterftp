@@ -2,8 +2,7 @@ import 'package:flutter/foundation.dart';
 
 enum TestProtocol {
   ramp('Ramp'),
-  twentyMin('20 Min'),
-  eightMin('8 Min');
+  twentyMin('20 Min');
 
   final String label;
   const TestProtocol(this.label);

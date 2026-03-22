@@ -306,7 +306,6 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen>
     final modes = [
       ('Ramp Test', 'Incremental power every minute'),
       ('20 Min Test', 'Sustain max effort for 20 min'),
-      ('8 Min Test', 'Two 8-minute max efforts'),
     ];
 
     showModalBottomSheet(
@@ -520,9 +519,7 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen>
                           'autoStart': true,
                           'protocol': _selectedMode == '20 Min Test'
                               ? 'twentyMin'
-                              : _selectedMode == '8 Min Test'
-                                  ? 'eightMin'
-                                  : 'ramp',
+                              : 'ramp',
                         })
                     : () => _shakePairingBlock(),
               ),
@@ -545,10 +542,17 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen>
             height: badgeSize,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: AppColors.dark, width: 3),
+              border: Border.all(color: AppColors.dark, width: 4),
             ),
             child: ClipOval(
-              child: _hamsterController.value.isInitialized
+              child: Padding(
+                padding: const EdgeInsets.only(
+                  top: 0,
+                  bottom: 12,
+                  left: 8,
+                  right: 8,
+                ),
+                child: _hamsterController.value.isInitialized
                   ? ColorFiltered(
                       colorFilter: const ColorFilter.mode(
                         AppColors.bg,
@@ -564,6 +568,7 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen>
                       ),
                     )
                   : const SizedBox.shrink(),
+              ),
             ),
           ),
           const SizedBox(height: 16),

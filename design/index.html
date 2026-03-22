@@ -194,12 +194,15 @@
   .hud-pill-label { font-size: 8px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
   .hud-pill-val { font-size: 11px; font-weight: 900; color: var(--dark); letter-spacing: -0.3px; }
 
-  /* OVERALL TEST PROGRESS */
-  .hud-progress { margin-bottom: 10px; }
-  .hud-progress-label { font-size: 8px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; display: flex; justify-content: space-between; }
-  .hud-progress-label-val { color: var(--dark); }
-  .hud-progress-track { height: 14px; background: #e8e5e0; border-radius: 5px; border: 2px solid var(--dark); overflow: hidden; }
-  .hud-progress-fill { height: 100%; border-radius: 3px; background: var(--teal); width: 0%; transition: width 0.5s ease; }
+  /* STEPPED WORKOUT PROGRESS (HUD FOOTER) */
+  .hud-steps { padding: 10px 16px 12px; border-top: 2px solid var(--border-light); }
+  .hud-steps-label { font-size: 8px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; display: flex; justify-content: space-between; }
+  .hud-steps-label-val { color: var(--dark); }
+  .hud-steps-blocks { display: flex; gap: 2px; height: 10px; }
+  .hud-step { flex: 1; border-radius: 2px; background: #e8e5e0; border: 1.5px solid #ccc; transition: all 0.4s ease; }
+  .hud-step.done { background: var(--teal); border-color: var(--teal-dark); }
+  .hud-step.current { background: var(--teal-bg); border-color: var(--teal); }
+  .hud-step.future { opacity: 0.35; }
 
   /* RESULT */
   .result { padding: 52px 22px 32px; display: flex; flex-direction: column; min-height: 100%; }
@@ -336,12 +339,12 @@
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Overall test progress -->
-      <div class="hud-progress">
-        <div class="hud-progress-label"><span>Test Progress</span><span class="hud-progress-label-val" id="h-progress-text">Stage 4 / 15</span></div>
-        <div class="hud-progress-track"><div class="hud-progress-fill" id="h-progress-fill"></div></div>
+        <!-- Workout progress (stepped blocks footer) -->
+        <div class="hud-steps">
+          <div class="hud-steps-label"><span>Test Progress</span><span class="hud-steps-label-val" id="h-progress-text">Stage 4 / 15</span></div>
+          <div class="hud-steps-blocks" id="h-progress-blocks"></div>
+        </div>
       </div>
 
       <!-- Summary pills -->
@@ -438,12 +441,29 @@
   const numSegments = 20;
   const intervalDuration = 60;
 
-  // Build segments
+  // Build interval segments
   const segContainer = document.getElementById('h-segments');
   for (let i = 0; i < numSegments; i++) {
     const seg = document.createElement('div');
     seg.className = 'hud-seg';
     segContainer.appendChild(seg);
+  }
+
+  // Build stepped workout progress blocks (built once, updated by observer)
+  const progContainer = document.getElementById('h-progress-blocks');
+  function buildProgressBlocks(totalStages, stageNum) {
+    progContainer.innerHTML = '';
+    for (let i = 0; i < totalStages; i++) {
+      const block = document.createElement('div');
+      block.className = 'hud-step' + (i < stageNum - 1 ? ' done' : i === stageNum - 1 ? ' current' : ' future');
+      progContainer.appendChild(block);
+    }
+  }
+  function updateProgressBlocks(totalStages, stageNum) {
+    const blocks = progContainer.children;
+    for (let i = 0; i < blocks.length; i++) {
+      blocks[i].className = 'hud-step' + (i < stageNum - 1 ? ' done' : i === stageNum - 1 ? ' current' : ' future');
+    }
   }
 
   function updateSegments(filled) {
@@ -499,8 +519,8 @@
       let sampleCount = 518;
 
       updateSegments(intervalSec);
-      // Initial progress
-      document.getElementById('h-progress-fill').style.width = Math.round((stageNum / totalStages) * 100) + '%';
+      // Initial stepped progress
+      buildProgressBlocks(totalStages, stageNum);
       document.getElementById('h-progress-text').textContent = 'Stage ' + stageNum + ' / ' + totalStages;
 
       hudInterval = setInterval(() => {
@@ -513,9 +533,8 @@
           targetPower += 20;
           document.getElementById('h-stage').textContent = 'Stage ' + stageNum + ' \u2014 ' + targetPower + 'W';
           document.getElementById('h-target').textContent = targetPower + 'W';
-          // Update overall progress
-          const pct = Math.min(100, Math.round((stageNum / totalStages) * 100));
-          document.getElementById('h-progress-fill').style.width = pct + '%';
+          // Update stepped progress blocks
+          updateProgressBlocks(totalStages, stageNum);
           document.getElementById('h-progress-text').textContent = 'Stage ' + stageNum + ' / ' + totalStages;
         }
 

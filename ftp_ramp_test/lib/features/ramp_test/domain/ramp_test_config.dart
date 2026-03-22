@@ -28,22 +28,12 @@ class RampTestConfig {
         warmupPower = 100,
         testDuration = 1200; // 20 minutes
 
-  const RampTestConfig.eightMin()
-      : startPower = 150,
-        increment = 0,
-        stageDuration = 0,
-        warmupDuration = 300,
-        warmupPower = 100,
-        testDuration = 480; // 8 minutes
-
   factory RampTestConfig.forProtocol(TestProtocol protocol) {
     switch (protocol) {
       case TestProtocol.ramp:
         return const RampTestConfig();
       case TestProtocol.twentyMin:
         return const RampTestConfig.twentyMin();
-      case TestProtocol.eightMin:
-        return const RampTestConfig.eightMin();
     }
   }
 }
