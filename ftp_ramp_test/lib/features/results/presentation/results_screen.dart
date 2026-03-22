@@ -5,16 +5,41 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../ramp_test/domain/ramp_test_state.dart';
+import '../data/fit_share_service.dart';
 
-class ResultsScreen extends StatelessWidget {
+class ResultsScreen extends StatefulWidget {
   final RampTestState testState;
 
   const ResultsScreen({super.key, required this.testState});
+
+  @override
+  State<ResultsScreen> createState() => _ResultsScreenState();
+}
+
+class _ResultsScreenState extends State<ResultsScreen> {
+  bool _isExporting = false;
 
   String _formatTime(int totalSeconds) {
     final minutes = totalSeconds ~/ 60;
     final seconds = totalSeconds % 60;
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  Future<void> _shareFitFile() async {
+    setState(() => _isExporting = true);
+    try {
+      await FitShareService().shareTestResult(widget.testState);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Export failed: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isExporting = false);
+      }
+    }
   }
 
   @override
@@ -95,7 +120,7 @@ class ResultsScreen extends StatelessWidget {
                                 child: Column(
                                   children: [
                                     Text(
-                                      '${testState.calculatedFtp ?? 0}',
+                                      '${widget.testState.calculatedFtp ?? 0}',
                                       style: const TextStyle(
                                         fontSize: 68,
                                         fontWeight: FontWeight.w900,
@@ -173,8 +198,8 @@ class ResultsScreen extends StatelessWidget {
                                       child: Column(
                                         children: [
                                           Text(
-                                            testState.maxHeartRate != null
-                                                ? '${testState.maxHeartRate}'
+                                            widget.testState.maxHeartRate != null
+                                                ? '${widget.testState.maxHeartRate}'
                                                 : '--',
                                             style: const TextStyle(
                                               fontSize: 30,
@@ -251,7 +276,7 @@ class ResultsScreen extends StatelessWidget {
                                         children: [
                                           Text(
                                             _formatTime(
-                                                testState.elapsedSeconds),
+                                                widget.testState.elapsedSeconds),
                                             style: const TextStyle(
                                               fontSize: 30,
                                               fontWeight: FontWeight.w900,
@@ -313,40 +338,40 @@ class ResultsScreen extends StatelessWidget {
                                 color: AppColors.card,
                                 child: Column(
                                   children: [
-                                    if (testState.protocol ==
+                                    if (widget.testState.protocol ==
                                         TestProtocol.ramp)
                                       _DetailRow(
                                         label: 'Best 1-min Avg',
                                         value:
-                                            '${testState.bestOneMinAvgPower.round()} W',
+                                            '${widget.testState.bestOneMinAvgPower.round()} W',
                                       ),
                                     _DetailRow(
                                       label: 'Max Power',
                                       value:
-                                          '${testState.maxPower} W',
+                                          '${widget.testState.maxPower} W',
                                     ),
-                                    if (testState.maxHeartRate != null)
+                                    if (widget.testState.maxHeartRate != null)
                                       _DetailRow(
                                         label: 'Max Heart Rate',
                                         value:
-                                            '${testState.maxHeartRate} BPM',
+                                            '${widget.testState.maxHeartRate} BPM',
                                       ),
-                                    if (testState.averageHeartRate != null)
+                                    if (widget.testState.averageHeartRate != null)
                                       _DetailRow(
                                         label: 'Avg Heart Rate',
                                         value:
-                                            '${testState.averageHeartRate} BPM',
+                                            '${widget.testState.averageHeartRate} BPM',
                                       ),
-                                    if (testState.protocol ==
+                                    if (widget.testState.protocol ==
                                         TestProtocol.ramp)
                                       _DetailRow(
                                         label: 'Stages Completed',
                                         value:
-                                            '${testState.currentStage + 1}',
+                                            '${widget.testState.currentStage + 1}',
                                       ),
                                     _DetailRow(
                                       label: 'Protocol',
-                                      value: testState.protocol.label,
+                                      value: widget.testState.protocol.label,
                                       isLast: true,
                                     ),
                                   ],
@@ -363,6 +388,12 @@ class ResultsScreen extends StatelessWidget {
 
               // Buttons pinned at bottom
               const SizedBox(height: 10),
+              AppButton(
+                label: _isExporting ? 'Exporting...' : 'Share .FIT',
+                variant: AppButtonVariant.teal,
+                onPressed: _isExporting ? null : _shareFitFile,
+              ),
+              const SizedBox(height: 8),
               AppButton(
                 label: '\u2190 Back to Home',
                 variant: AppButtonVariant.outline,
