@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>betterftp.cc — Your power doesn't need a subscription</title>
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<style>
+  @import url('https://cdn.jsdelivr.net/fontsource/fonts/iosevka@latest/latin-400-normal.min.css');
+  @import url('https://cdn.jsdelivr.net/fontsource/fonts/iosevka@latest/latin-700-normal.min.css');
+  @import url('https://cdn.jsdelivr.net/fontsource/fonts/iosevka@latest/latin-900-normal.min.css');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --teal: #0D9488;
+    --pink: #EC4899;
+    --yellow: #FACC15;
+    --yellow-deep: #EAB308;
+    --dark: #1a1a1a;
+    --bg: #F5F5F0;
+    --card: #FFFFFF;
+    --muted: #AAAAAA;
+  }
+
+  body {
+    font-family: 'Iosevka', monospace;
+    background: var(--bg);
+    color: var(--dark);
+    overflow-x: hidden;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: var(--dark);
+    border-bottom: 3px solid var(--dark);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 32px;
+  }
+  .nav-logo { font-weight: 900; font-size: 18px; color: var(--teal); letter-spacing: -1px; }
+  .nav-logo .dot { color: var(--pink); }
+  .nav-cta {
+    background: var(--teal); color: #fff; border: 2px solid var(--teal);
+    padding: 8px 20px; border-radius: 10px; font-family: 'Iosevka', monospace;
+    font-weight: 700; font-size: 12px; letter-spacing: 1px; cursor: pointer;
+    text-transform: uppercase; transition: all 0.2s;
+  }
+  .nav-cta:hover { background: var(--yellow); border-color: var(--yellow-deep); color: var(--dark); }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    padding: 80px 32px 40px;
+    position: relative;
+  }
+  .hero-color-bar {
+    position: absolute; top: 0; left: 0; right: 0; height: 4px;
+    background: linear-gradient(90deg, var(--teal) 0%, var(--teal) 60%, var(--pink) 60%, var(--pink) 85%, var(--yellow) 85%, var(--yellow) 100%);
+  }
+  .hero-content {
+    display: flex; align-items: center; gap: 80px;
+    max-width: 1100px; margin: 0 auto;
+    flex: 1;
+  }
+  .hero-text { text-align: left; flex: 1; }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 14px; border: 2px solid var(--teal);
+    border-radius: 6px; font-size: 10px; font-weight: 700;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--teal); background: rgba(13,148,136,0.06);
+    margin-bottom: 32px;
+  }
+  .hero-badge .blink {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--teal); animation: blink 2s infinite;
+  }
+  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+  .hero-logo {
+    font-weight: 900; font-size: 120px; letter-spacing: -6px;
+    line-height: 0.88; color: var(--teal); margin-bottom: 8px;
+  }
+  .hero-logo .dot { color: var(--pink); }
+  .hero-subtitle {
+    font-size: 13px; font-weight: 500; letter-spacing: 8px;
+    color: var(--muted); text-transform: uppercase; margin-bottom: 48px;
+  }
+  .hero-tagline {
+    font-size: 32px; font-weight: 900; letter-spacing: -1px;
+    max-width: 600px; line-height: 1.2; margin-bottom: 16px;
+  }
+  .hero-desc {
+    font-size: 15px; font-weight: 400; color: #666;
+    max-width: 520px; line-height: 1.7; margin-bottom: 48px;
+  }
+  .hero-buttons { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 17px 32px; border: 3px solid var(--dark);
+    border-radius: 14px; font-family: 'Iosevka', monospace;
+    font-weight: 900; font-size: 16px; cursor: pointer;
+    transition: all 0.2s; text-decoration: none;
+  }
+  .btn-primary { background: var(--dark); color: #fff; }
+  .btn-primary:hover { background: var(--yellow); border-color: var(--yellow-deep); color: var(--dark); }
+  .btn-outline { background: transparent; color: var(--dark); }
+  .btn-outline:hover { background: var(--yellow); border-color: var(--yellow-deep); }
+
+  /* HAMSTER CIRCLE */
+  .hamster-circle { flex-shrink: 0; position: relative; }
+  .hamster-circle-frame {
+    width: 320px; height: 320px;
+    border: 4px solid var(--dark);
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--bg);
+    box-shadow: 8px 8px 0 var(--dark);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .hamster-circle-frame img {
+    width: 75%; height: 75%;
+    object-fit: contain;
+    pointer-events: none;
+    user-select: none;
+    mix-blend-mode: multiply;
+  }
+  .hamster-circle-tag {
+    position: absolute; bottom: -16px; left: 50%; transform: translateX(-50%);
+    background: var(--dark); color: #fff; padding: 6px 16px;
+    border-radius: 8px; font-size: 9px; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase; white-space: nowrap;
+    border: 2px solid var(--dark); z-index: 2;
+  }
+
+  /* PROMISES (hero bottom pills) */
+  .promises-strip {
+    display: flex; gap: 10px; flex-wrap: wrap;
+    justify-content: center;
+    max-width: 1100px; margin: 0 auto;
+    margin-top: auto;
+    padding-top: 40px;
+    width: 100%;
+  }
+  .promise-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 16px;
+    border: 2px solid var(--dark); border-radius: 10px;
+    background: var(--card);
+    font-size: 11px; font-weight: 900; letter-spacing: -0.2px;
+    transition: background 0.2s;
+  }
+  .promise-pill:hover { background: rgba(13,148,136,0.06); }
+  .promise-pill-icon {
+    width: 28px; height: 28px; border: 2px solid var(--dark);
+    border-radius: 8px; display: flex; align-items: center;
+    justify-content: center; font-size: 14px; flex-shrink: 0;
+  }
+
+  /* FLOW TIMELINE */
+  .flow { padding: 80px 32px; max-width: 1100px; margin: 0 auto; }
+  .flow-label {
+    font-size: 9px; font-weight: 700; letter-spacing: 3px;
+    text-transform: uppercase; color: var(--teal); margin-bottom: 12px;
+  }
+  .flow-title {
+    font-size: 36px; font-weight: 900; letter-spacing: -2px;
+    margin-bottom: 60px; line-height: 1.1;
+  }
+  .timeline {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 24px; position: relative;
+  }
+  .timeline::before {
+    content: ''; position: absolute;
+    top: 192px; left: 60px; right: 60px; height: 3px;
+    background: var(--dark);
+  }
+  .step { text-align: center; position: relative; }
+  .phone {
+    width: 180px; height: 340px; margin: 0 auto 24px;
+    border: 3px solid var(--dark); border-radius: 24px;
+    background: var(--card); overflow: hidden;
+    position: relative; transform: rotate(-1deg);
+  }
+  .step:nth-child(2) .phone { transform: rotate(0.5deg); }
+  .step:nth-child(3) .phone { transform: rotate(-0.7deg); }
+  .step:nth-child(4) .phone { transform: rotate(1deg); }
+  .phone-notch {
+    width: 60px; height: 14px; background: var(--dark);
+    border-radius: 0 0 8px 8px; margin: 0 auto;
+  }
+  .phone-inner { padding: 10px 10px 8px; }
+  .step-dot {
+    width: 40px; height: 40px; border: 3px solid var(--dark);
+    border-radius: 50%; background: var(--card);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 900; margin: 0 auto 16px;
+    position: relative; z-index: 2;
+  }
+  .step:nth-child(1) .step-dot { background: var(--teal); color: #fff; }
+  .step:nth-child(2) .step-dot { background: var(--pink); color: #fff; }
+  .step:nth-child(3) .step-dot { background: var(--teal); color: #fff; }
+  .step:nth-child(4) .step-dot { background: var(--dark); color: #fff; }
+  .step h3 { font-size: 14px; font-weight: 900; margin-bottom: 4px; }
+  .step p { font-size: 11px; color: #888; line-height: 1.5; max-width: 200px; margin: 0 auto; }
+  .sk-rect {
+    border: 2px solid var(--dark); border-radius: 5px;
+    margin-bottom: 5px; overflow: hidden;
+  }
+  .sk-rect-header {
+    padding: 4px 6px; font-size: 5px; font-weight: 700;
+    letter-spacing: 1.5px; text-transform: uppercase; color: #fff;
+  }
+  .sk-rect-body { padding: 5px 6px; }
+  .sk-big-num {
+    font-size: 36px; font-weight: 900; text-align: center;
+    letter-spacing: -2px; line-height: 1;
+  }
+  .ios-share {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: #fff; border-top: 2px solid #ddd;
+    border-radius: 12px 12px 0 0; padding: 8px 6px 6px;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+  }
+  .ios-share-handle {
+    width: 28px; height: 3px; background: #ccc;
+    border-radius: 2px; margin: 0 auto 6px;
+  }
+  .ios-share-header {
+    display: flex; align-items: center; gap: 6px;
+    padding-bottom: 6px; border-bottom: 1px solid #eee;
+    margin-bottom: 6px;
+  }
+  .ios-share-icon {
+    width: 24px; height: 24px; border-radius: 5px;
+    border: 1.5px solid var(--dark); display: flex;
+    align-items: center; justify-content: center;
+    font-size: 6px; font-weight: 900; background: var(--teal); color: #fff;
+  }
+  .ios-share-file-info { flex: 1; }
+  .ios-share-file-name { font-size: 6px; font-weight: 900; }
+  .ios-share-file-size { font-size: 5px; color: var(--muted); }
+  .ios-share-apps {
+    display: flex; gap: 8px; justify-content: center;
+    padding: 6px 0;
+  }
+  .ios-share-app { text-align: center; }
+  .ios-share-app-icon {
+    width: 28px; height: 28px; border-radius: 7px;
+    margin: 0 auto 2px; display: flex;
+    align-items: center; justify-content: center;
+    font-size: 12px; border: 1.5px solid #ddd;
+  }
+  .ios-share-app-label { font-size: 4px; color: #666; font-weight: 700; }
+  .ios-share-actions {
+    border-top: 1px solid #eee; padding-top: 4px;
+  }
+  .ios-share-action {
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 2px; font-size: 6px; color: var(--dark);
+  }
+  .ios-share-action-icon {
+    width: 16px; height: 16px; border-radius: 50%;
+    background: #f0f0f0; display: flex; align-items: center;
+    justify-content: center; font-size: 7px;
+  }
+
+  /* FOOTER */
+  footer {
+    border-top: 3px solid var(--dark);
+    padding: 40px 32px;
+    display: flex; justify-content: space-between; align-items: center;
+    max-width: 1100px; margin: 0 auto;
+  }
+  .footer-logo { font-weight: 900; font-size: 24px; color: var(--teal); letter-spacing: -1px; }
+  .footer-logo .dot { color: var(--pink); }
+  .footer-info { flex: 1; text-align: center; }
+  .footer-info p {
+    font-size: 11px; color: #888; line-height: 1.8;
+  }
+  .footer-info a {
+    color: var(--teal); text-decoration: none; font-weight: 700;
+  }
+  .footer-info a:hover { text-decoration: underline; }
+  .footer-copy { font-size: 11px; color: var(--muted); }
+
+  /* RESPONSIVE */
+  @media (max-width: 900px) {
+    .hero-content { flex-direction: column; gap: 40px; }
+    .hero-text { text-align: center; }
+    .hamster-circle-frame { width: 240px !important; height: 240px !important; }
+    .promises-strip { gap: 8px; }
+    .timeline { grid-template-columns: repeat(2, 1fr); gap: 40px; }
+    .timeline::before { display: none; }
+  }
+  @media (max-width: 600px) {
+    .hero-logo { font-size: 72px; letter-spacing: -4px; }
+    .promises-strip { gap: 6px; }
+    .promise-pill { font-size: 10px; padding: 6px 12px; }
+    .promise-pill-icon { width: 24px; height: 24px; font-size: 12px; }
+    nav { padding: 12px 16px; }
+    footer { flex-direction: column; gap: 16px; text-align: center; }
+    .hamster-circle-frame { width: 200px !important; height: 200px !important; }
+    .timeline { grid-template-columns: 1fr; }
+    .flow-title { font-size: 28px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-color-bar"></div>
+  <div class="hero-content">
+    <div class="hero-text">
+      <div class="hero-badge" style="border-color:#EF4444;color:#EF4444;background:rgba(239,68,68,0.06)"><span class="blink" style="background:#EF4444"></span> Test Live</div>
+      <div class="hero-logo">BETTER<span class="dot">.</span><br>FTP</div>
+      <div class="hero-subtitle">betterftp.cc</div>
+      <h1 class="hero-tagline">Your power doesn't need<br>a subscription.</h1>
+      <p class="hero-desc">
+        Connect your smart trainer, pick a protocol, ride until you can't.
+        That's it. No account needed, no subscriptions, no data harvesting.
+        Just you, your legs, and a number.
+      </p>
+      <div class="hero-buttons">
+        <a href="#" class="btn btn-primary">Download for iOS</a>
+        <a href="#" class="btn btn-outline">Get on Android</a>
+      </div>
+    </div>
+
+    <!-- ANIMATED HAMSTER (MP4 video) -->
+    <div class="hamster-circle">
+      <div class="hamster-circle-frame">
+        <img id="hamster-img" src="hamster-still.png" alt="HMSTR on a bike" draggable="false">
+      </div>
+    </div>
+  </div>
+
+  <!-- PROMISES STRIP -->
+  <div class="promises-strip">
+    <div class="promise-pill">
+      <div class="promise-pill-icon" style="background:#F0FDF4">&#10003;</div>
+      Free
+    </div>
+    <div class="promise-pill">
+      <div class="promise-pill-icon" style="background:#FCE7F3">&#128683;</div>
+      No Ads
+    </div>
+    <div class="promise-pill">
+      <div class="promise-pill-icon" style="background:#FEF3C7">&#128274;</div>
+      No Account
+    </div>
+    <div class="promise-pill">
+      <div class="promise-pill-icon" style="background:#E0F2FE">&#9889;</div>
+      Simple Setup
+    </div>
+  </div>
+</section>
+
+<!-- FLOW TIMELINE -->
+<section class="flow">
+  <div class="flow-label">How It Works</div>
+  <h2 class="flow-title">Four steps to<br>calculate your FTP.</h2>
+
+  <div class="timeline">
+
+    <!-- STEP 1: Pair & Select -->
+    <div class="step">
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-inner">
+          <div style="text-align:center;margin-bottom:6px">
+            <div style="font-weight:900;font-size:12px;color:var(--teal);letter-spacing:-1px;line-height:0.85">BETTER<span style="color:var(--pink)">.</span><br>FTP</div>
+            <div style="font-size:4px;color:var(--muted);letter-spacing:2px;margin-top:2px">BETTERFTP.CC</div>
+          </div>
+
+          <div class="sk-rect">
+            <div class="sk-rect-header" style="background:var(--teal)">Test Mode</div>
+            <div class="sk-rect-body">
+              <div style="font-size:5px;font-weight:700;color:var(--muted);letter-spacing:1px;text-transform:uppercase">Selected</div>
+              <div style="font-size:9px;font-weight:900;margin-top:2px">FTP Ramp Test</div>
+            </div>
+          </div>
+
+          <!-- Scan results modal -->
+          <div class="sk-rect">
+            <div class="sk-rect-header" style="background:var(--dark)">Scanning...</div>
+            <div class="sk-rect-body" style="padding:4px 6px">
+              <div style="display:flex;align-items:center;gap:5px;padding:3px 0;border-bottom:1px solid #eee">
+                <div style="width:5px;height:5px;border-radius:50%;background:var(--teal)"></div>
+                <div style="flex:1">
+                  <div style="font-size:7px;font-weight:700">KICKR 48A2</div>
+                  <div style="font-size:4px;color:var(--muted)">FTMS Trainer</div>
+                </div>
+                <div style="font-size:4px;color:var(--muted)">-42dB</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:5px;padding:3px 0;border-bottom:1px solid #eee">
+                <div style="width:5px;height:5px;border-radius:50%;background:var(--teal)"></div>
+                <div style="flex:1">
+                  <div style="font-size:7px;font-weight:700">HUB 7F01</div>
+                  <div style="font-size:4px;color:var(--muted)">FTMS Trainer</div>
+                </div>
+                <div style="font-size:4px;color:var(--muted)">-58dB</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:5px;padding:3px 0;opacity:0.4">
+                <div style="width:5px;height:5px;border-radius:50%;background:#ccc"></div>
+                <div style="flex:1">
+                  <div style="font-size:7px;font-weight:700">NEO 3C9E</div>
+                  <div style="font-size:4px;color:var(--muted)">FTMS Trainer</div>
+                </div>
+                <div style="font-size:4px;color:var(--muted)">-71dB</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="padding:7px;border:2px solid var(--dark);border-radius:8px;background:var(--dark);text-align:center;margin-top:8px">
+            <div style="font-size:7px;font-weight:900;color:#fff;letter-spacing:1px">START TEST</div>
+          </div>
+        </div>
+      </div>
+      <div class="step-dot">1</div>
+      <h3>Pair & Select</h3>
+      <p>Connect your trainer via Bluetooth or ANT+. Pick your test protocol.</p>
+    </div>
+
+    <!-- STEP 2: Ride -->
+    <div class="step">
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-inner">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <div style="font-size:7px;font-weight:900">Ramp Test</div>
+            <span style="font-size:5px;font-weight:700;color:var(--teal);border:1px solid var(--teal);padding:1px 4px;border-radius:2px;display:flex;align-items:center;gap:2px"><span style="width:3px;height:3px;border-radius:50%;background:var(--teal)"></span>LIVE</span>
+          </div>
+
+          <div class="sk-rect">
+            <div class="sk-rect-header" style="background:var(--teal)">Stage 7 &mdash; 240W</div>
+            <div class="sk-rect-body">
+              <!-- Interval (empty) -->
+              <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+                <div><div style="font-size:4px;font-weight:700;color:var(--muted)">DONE</div><div style="height:6px;width:18px;background:#eee;border-radius:2px;margin-top:1px"></div></div>
+                <div style="text-align:right"><div style="font-size:4px;font-weight:700;color:var(--muted)">LEFT</div><div style="height:6px;width:18px;background:#eee;border-radius:2px;margin-top:1px"></div></div>
+              </div>
+              <div style="display:flex;gap:1px;margin:3px 0">
+                <div style="flex:1;height:5px;background:var(--teal);border-radius:1px"></div>
+                <div style="flex:1;height:5px;background:var(--teal);border-radius:1px"></div>
+                <div style="flex:1;height:5px;background:var(--teal);border-radius:1px"></div>
+                <div style="flex:1;height:5px;background:var(--teal);border-radius:1px"></div>
+                <div style="flex:1;height:5px;background:var(--teal);border-radius:1px"></div>
+                <div style="flex:1;height:5px;background:rgba(13,148,136,0.2);border-radius:1px"></div>
+                <div style="flex:1;height:5px;background:#e0e0e0;border-radius:1px"></div>
+                <div style="flex:1;height:5px;background:#e0e0e0;border-radius:1px"></div>
+                <div style="flex:1;height:5px;background:#e0e0e0;border-radius:1px"></div>
+                <div style="flex:1;height:5px;background:#e0e0e0;border-radius:1px"></div>
+              </div>
+
+              <!-- Big watts -->
+              <div style="text-align:center;margin:8px 0 4px">
+                <div style="font-size:15px;font-weight:900;letter-spacing:-1px;line-height:1">243<span style="font-size:6px;color:var(--muted);font-weight:700"> W</span></div>
+              </div>
+
+              <!-- HR + Cadence -->
+              <div style="display:flex;gap:4px;margin-bottom:6px">
+                <div style="flex:1;text-align:center;padding:3px;border:1.5px solid var(--dark);border-radius:4px">
+                  <div style="font-size:4px;color:var(--pink);font-weight:700">&#9829; HR</div>
+                  <div style="font-size:13px;font-weight:900;letter-spacing:-0.5px">172</div>
+                </div>
+                <div style="flex:1;text-align:center;padding:3px;border:1.5px solid var(--dark);border-radius:4px">
+                  <div style="font-size:4px;color:var(--teal);font-weight:700">&#8635; RPM</div>
+                  <div style="font-size:9px;font-weight:900">91</div>
+                </div>
+              </div>
+
+              <!-- Stage progress -->
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:4px;font-weight:700;color:var(--muted);margin-bottom:2px"><span>Progress</span><span>7 / 15</span></div>
+                <div style="display:flex;gap:1px">
+                  <div style="flex:1;height:6px;background:var(--teal);border-radius:1px"></div>
+                  <div style="flex:1;height:6px;background:var(--teal);border-radius:1px"></div>
+                  <div style="flex:1;height:6px;background:var(--teal);border-radius:1px"></div>
+                  <div style="flex:1;height:6px;background:var(--teal);border-radius:1px"></div>
+                  <div style="flex:1;height:6px;background:var(--teal);border-radius:1px"></div>
+                  <div style="flex:1;height:6px;background:var(--teal);border-radius:1px"></div>
+                  <div style="flex:1;height:6px;background:rgba(13,148,136,0.3);border-radius:1px"></div>
+                  <div style="flex:1;height:6px;background:#e0e0e0;border-radius:1px;opacity:0.35"></div>
+                  <div style="flex:1;height:6px;background:#e0e0e0;border-radius:1px;opacity:0.35"></div>
+                  <div style="flex:1;height:6px;background:#e0e0e0;border-radius:1px;opacity:0.35"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Summary pills (empty) -->
+          <div style="display:flex;gap:2px;justify-content:center;margin-top:4px;flex-wrap:wrap">
+            <span style="display:inline-block;padding:2px 5px;border:1px solid #ddd;border-radius:3px;width:28px;height:10px"></span>
+            <span style="display:inline-block;padding:2px 5px;border:1px solid #ddd;border-radius:3px;width:24px;height:10px"></span>
+            <span style="display:inline-block;padding:2px 5px;border:1px solid #ddd;border-radius:3px;width:30px;height:10px"></span>
+          </div>
+
+          <div style="padding:6px;border:2px solid var(--pink);border-radius:8px;background:var(--pink);text-align:center;margin-top:6px">
+            <div style="font-size:6px;font-weight:900;color:#fff;letter-spacing:1px">STOP TEST</div>
+          </div>
+        </div>
+      </div>
+      <div class="step-dot">2</div>
+      <h3>Ride the Ramp</h3>
+      <p>Warm up, then give it everything. Live data keeps you on track.</p>
+    </div>
+
+    <!-- STEP 3: Results -->
+    <div class="step">
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-inner">
+          <div style="font-size:7px;font-weight:900;text-align:center;margin-bottom:6px">Your Results</div>
+
+          <div class="sk-rect">
+            <div class="sk-rect-header" style="background:var(--pink)">Estimated FTP</div>
+            <div class="sk-rect-body" style="text-align:center;padding:14px 6px">
+              <div class="sk-big-num" style="font-size:48px;color:var(--pink)">245</div>
+              <div style="font-size:6px;font-weight:700;color:var(--muted);letter-spacing:2px;margin-top:2px">WATTS</div>
+            </div>
+          </div>
+
+          <!-- Stat cards (empty values) -->
+          <div style="display:flex;gap:4px">
+            <div class="sk-rect" style="flex:1">
+              <div class="sk-rect-header" style="background:var(--pink);font-size:4px">&#9829; Max HR</div>
+              <div class="sk-rect-body" style="text-align:center;padding:6px">
+                <div style="height:10px;width:28px;background:#eee;border-radius:2px;margin:0 auto"></div>
+              </div>
+            </div>
+            <div class="sk-rect" style="flex:1">
+              <div class="sk-rect-header" style="background:var(--teal);font-size:4px">&#9201; Duration</div>
+              <div class="sk-rect-body" style="text-align:center;padding:6px">
+                <div style="height:10px;width:28px;background:#eee;border-radius:2px;margin:0 auto"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Summary block (empty rows) -->
+          <div class="sk-rect" style="margin-top:4px">
+            <div class="sk-rect-header" style="background:var(--dark);font-size:4px">Test Summary</div>
+            <div class="sk-rect-body" style="padding:4px 6px">
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:2px 0;border-bottom:1px solid #eee"><div style="height:4px;width:35px;background:#eee;border-radius:1px"></div><div style="height:4px;width:18px;background:#eee;border-radius:1px"></div></div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:2px 0;border-bottom:1px solid #eee"><div style="height:4px;width:28px;background:#eee;border-radius:1px"></div><div style="height:4px;width:15px;background:#eee;border-radius:1px"></div></div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:2px 0;border-bottom:1px solid #eee"><div style="height:4px;width:22px;background:#eee;border-radius:1px"></div><div style="height:4px;width:12px;background:#eee;border-radius:1px"></div></div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:2px 0"><div style="height:4px;width:30px;background:#eee;border-radius:1px"></div><div style="height:4px;width:10px;background:#eee;border-radius:1px"></div></div>
+            </div>
+          </div>
+
+          <div style="padding:6px;border:2px solid var(--teal);border-radius:8px;background:var(--teal);text-align:center;margin-top:6px">
+            <div style="font-size:6px;font-weight:900;color:#fff;letter-spacing:1px">SHARE .FIT</div>
+          </div>
+          <div style="padding:5px;border:2px solid var(--dark);border-radius:8px;text-align:center;margin-top:4px">
+            <div style="font-size:5px;font-weight:900;color:var(--dark);letter-spacing:1px">BACK TO HOME</div>
+          </div>
+        </div>
+      </div>
+      <div class="step-dot">3</div>
+      <h3>See Results</h3>
+      <p>FTP calculated instantly. Full stats and test summary.</p>
+    </div>
+
+    <!-- STEP 4: Export with iOS Share Sheet -->
+    <div class="step">
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-inner">
+          <!-- Dimmed background content -->
+          <div style="opacity:0.25">
+            <div style="font-size:7px;font-weight:900;text-align:center;margin-bottom:4px">Your Results</div>
+            <div class="sk-rect" style="margin-bottom:4px">
+              <div class="sk-rect-header" style="background:var(--pink);padding:3px 6px">Estimated FTP</div>
+              <div class="sk-rect-body" style="text-align:center;padding:6px"><div style="font-size:24px;font-weight:900;color:var(--pink)">245</div><div style="font-size:5px;font-weight:700;color:var(--muted);letter-spacing:1px">WATTS</div></div>
+            </div>
+          </div>
+
+          <!-- Share/Export overlay -->
+          <div class="ios-share">
+            <div class="ios-share-handle"></div>
+            <div class="ios-share-header">
+              <div class="ios-share-icon">FIT</div>
+              <div class="ios-share-file-info">
+                <div class="ios-share-file-name">ramp_test_2026.fit</div>
+                <div class="ios-share-file-size">42 KB</div>
+              </div>
+            </div>
+            <div class="ios-share-actions" style="border-top:none;padding-top:2px">
+              <div class="ios-share-action">
+                <div class="ios-share-action-icon" style="background:#007AFF;color:#fff;font-size:7px">&#9993;</div>
+                <span>Send via Email</span>
+              </div>
+              <div class="ios-share-action">
+                <div class="ios-share-action-icon">&#128193;</div>
+                <span>Save to Files</span>
+              </div>
+              <div class="ios-share-action">
+                <div class="ios-share-action-icon">&#128203;</div>
+                <span>Copy to Clipboard</span>
+              </div>
+              <div class="ios-share-action">
+                <div class="ios-share-action-icon" style="font-size:8px">&#8943;</div>
+                <span>More Options</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="step-dot">4</div>
+      <h3>Export .FIT</h3>
+      <p>Save your file, send it via email, or share it with your coach.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">BETTER<span class="dot">.</span>FTP</div>
+  <div class="footer-info">
+    <p>
+      <strong>Privacy:</strong> This app collects no personal data. No analytics, no tracking, no accounts.
+      All workout data stays on your device unless you choose to export it.
+    </p>
+    <p style="margin-top:8px">
+      <strong>Contact:</strong> <a href="mailto:hello@betterftp.cc">hello@betterftp.cc</a>
+    </p>
+  </div>
+  <div class="footer-copy">&copy; 2026 betterftp.cc</div>
+</footer>
+
+</body>
+</html>
