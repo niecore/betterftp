@@ -35,23 +35,33 @@ class TrainerRepository {
 
   TrainerRepository(this._scannerService);
 
-  /// Connect to a trainer device
+  /// Connect to a trainer device discovered via scan
   Future<bool> connect(Trainer trainer) async {
+    _scannerService.stopScan();
+
+    final device = _scannerService.getDevice(trainer.id);
+    if (device == null) {
+      developer.log('Device not found in cache: ${trainer.id}',
+          name: 'TrainerRepository');
+      return false;
+    }
+
+    return _connectToDevice(device, trainer.name);
+  }
+
+  /// Connect to a trainer by its BLE remote ID (no scan needed).
+  /// Used for auto-reconnecting to a previously paired device.
+  Future<bool> connectById(String id, String name) async {
+    final device = BluetoothDevice.fromId(id);
+    return _connectToDevice(device, name);
+  }
+
+  Future<bool> _connectToDevice(BluetoothDevice device, String name) async {
     try {
       _updateConnectionState(TrainerConnectionState.connecting);
 
-      _scannerService.stopScan();
-
-      final device = _scannerService.getDevice(trainer.id);
-      if (device == null) {
-        developer.log('Device not found in cache: ${trainer.id}',
-            name: 'TrainerRepository');
-        _updateConnectionState(TrainerConnectionState.disconnected);
-        return false;
-      }
-
       _connectedDevice = device;
-      _connectedDeviceName = trainer.name;
+      _connectedDeviceName = name;
 
       await device.connect(
         license: License.free,

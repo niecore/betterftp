@@ -31,21 +31,31 @@ class HrRepository {
 
   HrRepository(this._scannerService);
 
-  /// Connect to a heart rate monitor device
+  /// Connect to a heart rate monitor discovered via scan
   Future<bool> connect(HrMonitor monitor) async {
+    final device = _scannerService.getDevice(monitor.id);
+    if (device == null) {
+      developer.log('Device not found in cache: ${monitor.id}',
+          name: 'HrRepository');
+      return false;
+    }
+
+    return _connectToDevice(device, monitor.name);
+  }
+
+  /// Connect to an HR monitor by its BLE remote ID (no scan needed).
+  /// Used for auto-reconnecting to a previously paired device.
+  Future<bool> connectById(String id, String name) async {
+    final device = BluetoothDevice.fromId(id);
+    return _connectToDevice(device, name);
+  }
+
+  Future<bool> _connectToDevice(BluetoothDevice device, String name) async {
     try {
       _updateConnectionState(HrConnectionState.connecting);
 
-      final device = _scannerService.getDevice(monitor.id);
-      if (device == null) {
-        developer.log('Device not found in cache: ${monitor.id}',
-            name: 'HrRepository');
-        _updateConnectionState(HrConnectionState.disconnected);
-        return false;
-      }
-
       _connectedDevice = device;
-      _connectedDeviceName = monitor.name;
+      _connectedDeviceName = name;
 
       await device.connect(
         license: License.free,

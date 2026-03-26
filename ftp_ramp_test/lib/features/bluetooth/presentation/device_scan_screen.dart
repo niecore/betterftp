@@ -1,4 +1,7 @@
+import 'dart:developer' as developer;
+
 import 'package:flutter/material.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:video_player/video_player.dart';
@@ -11,6 +14,7 @@ import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/icon_box.dart';
 import '../../../shared/widgets/tag_widget.dart';
 import '../data/ble_scanner_service.dart';
+import '../data/device_storage_service.dart';
 import '../data/hr_repository.dart';
 import '../data/trainer_repository.dart';
 import '../domain/hr_monitor.dart';
@@ -57,6 +61,43 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen>
       parent: _shakeController,
       curve: Curves.easeOut,
     ));
+
+    // Auto-reconnect to previously paired devices
+    _autoReconnect();
+  }
+
+  Future<void> _autoReconnect() async {
+    final storage = ref.read(deviceStorageServiceProvider);
+    final savedTrainer = storage.getSavedTrainer();
+    final savedHr = storage.getSavedHrMonitor();
+
+    if (savedTrainer == null && savedHr == null) return;
+
+    // Wait for Bluetooth adapter to be ready before connecting
+    try {
+      final adapterState = await FlutterBluePlus.adapterState
+          .firstWhere((s) => s == BluetoothAdapterState.on)
+          .timeout(const Duration(seconds: 5));
+      if (adapterState != BluetoothAdapterState.on) return;
+    } catch (e) {
+      developer.log('Auto-reconnect: Bluetooth not ready, skipping',
+          name: 'DeviceScanScreen');
+      return;
+    }
+
+    if (!mounted) return;
+
+    if (savedTrainer != null) {
+      ref
+          .read(trainerRepositoryProvider)
+          .connectById(savedTrainer.id, savedTrainer.name);
+    }
+
+    if (savedHr != null) {
+      ref
+          .read(hrRepositoryProvider)
+          .connectById(savedHr.id, savedHr.name);
+    }
   }
 
   void _shakePairingBlock() {
@@ -74,7 +115,9 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen>
     final repository = ref.read(trainerRepositoryProvider);
     final trainer = Trainer(id: device.id, name: device.name);
     final success = await repository.connect(trainer);
-    if (mounted && !success) {
+    if (success) {
+      ref.read(deviceStorageServiceProvider).saveTrainer(device.id, device.name);
+    } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to connect to ${device.name}')),
       );
@@ -85,7 +128,9 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen>
     final repository = ref.read(hrRepositoryProvider);
     final monitor = HrMonitor(id: device.id, name: device.name);
     final success = await repository.connect(monitor);
-    if (mounted && !success) {
+    if (success) {
+      ref.read(deviceStorageServiceProvider).saveHrMonitor(device.id, device.name);
+    } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to connect to ${device.name}')),
       );
@@ -531,7 +576,7 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen>
   }
 
   Widget _buildLogo() {
-    const double badgeSize = 180;
+    const double badgeSize = 200;
 
     return Center(
       child: Column(
@@ -542,15 +587,22 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen>
             height: badgeSize,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
+              color: AppColors.bg,
               border: Border.all(color: AppColors.dark, width: 4),
+              boxShadow: const [
+                BoxShadow(
+                  color: AppColors.dark,
+                  offset: Offset(4, 4),
+                ),
+              ],
             ),
             child: ClipOval(
               child: Padding(
                 padding: const EdgeInsets.only(
                   top: 0,
-                  bottom: 12,
-                  left: 8,
-                  right: 8,
+                  bottom: 16,
+                  left: 32,
+                  right: 32,
                 ),
                 child: _hamsterController.value.isInitialized
                   ? ColorFiltered(
