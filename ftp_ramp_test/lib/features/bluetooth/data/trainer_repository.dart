@@ -20,6 +20,7 @@ class TrainerRepository {
   /// Cached FTMS characteristics after service discovery
   BluetoothCharacteristic? _bikeDataChar;
   BluetoothCharacteristic? _controlPointChar;
+  bool _hasControl = false;
 
   final _trainerDataController = StreamController<TrainerData>.broadcast();
   final _connectionStateController =
@@ -137,6 +138,17 @@ class TrainerRepository {
         _trainerDataController.add(trainerData);
       });
 
+      // Subscribe to Control Point indications (required by FTMS spec
+      // before writing commands) and request control once.
+      _hasControl = false;
+      if (_controlPointChar != null) {
+        await _controlPointChar!.setNotifyValue(true);
+        await _controlPointChar!
+            .write([FtmsConstants.requestControlOpCode], withoutResponse: false);
+        _hasControl = true;
+        developer.log('FTMS control acquired', name: 'TrainerRepository');
+      }
+
       _updateConnectionState(TrainerConnectionState.connected);
       return true;
     } catch (e, stackTrace) {
@@ -236,9 +248,14 @@ class TrainerRepository {
     }
 
     try {
-      // Request control first
-      await _controlPointChar!
-          .write([FtmsConstants.requestControlOpCode], withoutResponse: false);
+      // Re-request control if we lost it (e.g. after reconnect)
+      if (!_hasControl) {
+        await _controlPointChar!.write(
+          [FtmsConstants.requestControlOpCode],
+          withoutResponse: false,
+        );
+        _hasControl = true;
+      }
 
       // Set target power: opcode + 2 bytes little-endian watts
       final lowByte = watts & 0xFF;
@@ -251,6 +268,8 @@ class TrainerRepository {
     } catch (e) {
       developer.log('Error setting target power: $e',
           name: 'TrainerRepository');
+      // Mark control as lost so we re-request on next attempt
+      _hasControl = false;
       return false;
     }
   }
@@ -281,6 +300,7 @@ class TrainerRepository {
     _disconnectSubscription = null;
     _bikeDataChar = null;
     _controlPointChar = null;
+    _hasControl = false;
   }
 
   void _updateConnectionState(TrainerConnectionState state) {

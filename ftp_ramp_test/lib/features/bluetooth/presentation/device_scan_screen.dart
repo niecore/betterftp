@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
@@ -185,6 +186,7 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen>
 
   void _showDeviceSheet({required bool forHr}) {
     final scannerService = ref.read(bleScannerServiceProvider);
+    final scanStream = scannerService.scanForDevices();
 
     showModalBottomSheet(
       context: context,
@@ -193,154 +195,25 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen>
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) {
-        final scanStream = scannerService.scanForDevices();
-
-        return StreamBuilder<List<ScannedDevice>>(
-          stream: scanStream,
-          initialData: const [],
-          builder: (ctx, snapshot) {
-            final allDevices = snapshot.data ?? [];
-            final relevantDevices = forHr
-                ? allDevices
-                    .where((d) => _isHrMonitor(d) && !_isTrainer(d))
-                    .toList()
-                : allDevices.where(_isTrainer).toList();
-            final isScanning =
-                snapshot.connectionState == ConnectionState.active;
-
-            return Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.screenSide,
-                AppSpacing.xxl,
-                AppSpacing.screenSide,
-                40,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        forHr ? 'Select HR Monitor' : 'Select Trainer',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.dark,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: () {
-                          scannerService.stopScan();
-                          Navigator.pop(ctx);
-                        },
-                        child: Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: AppColors.card,
-                            border:
-                                Border.all(color: AppColors.dark, width: 2),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          alignment: Alignment.center,
-                          child: const Text(
-                            '\u2715',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: AppColors.dark,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  if (isScanning && relevantDevices.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 24),
-                      child: Center(
-                        child: Column(
-                          children: [
-                            SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: AppColors.teal,
-                              ),
-                            ),
-                            SizedBox(height: 12),
-                            Text(
-                              'SCANNING...',
-                              style: TextStyle(
-                                fontSize: 9,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 2,
-                                color: AppColors.muted,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ...relevantDevices.map((device) {
-                    return GestureDetector(
-                      onTap: () {
-                              scannerService.stopScan();
-                              Navigator.pop(ctx);
-                              if (forHr) {
-                                _connectAsHrMonitor(device);
-                              } else {
-                                _connectAsTrainer(device);
-                              }
-                            },
-                      child: Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.all(AppSpacing.lg),
-                        decoration: BoxDecoration(
-                          color: AppColors.card,
-                          border:
-                              Border.all(color: AppColors.dark, width: 3),
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    device.name,
-                                    style: const TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w900,
-                                      color: AppColors.dark,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    device.id,
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      color: AppColors.muted,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            _buildSignalBars(device.rssi),
-                          ],
-                        ),
-                      ),
-                    );
-                  }),
-                ],
-              ),
-            );
+        return _DeviceScanSheet(
+          scanStream: scanStream,
+          scannerService: scannerService,
+          forHr: forHr,
+          isTrainer: _isTrainer,
+          isHrMonitor: _isHrMonitor,
+          buildSignalBars: _buildSignalBars,
+          onDeviceSelected: (device) {
+            scannerService.stopScan();
+            Navigator.pop(ctx);
+            if (forHr) {
+              _connectAsHrMonitor(device);
+            } else {
+              _connectAsTrainer(device);
+            }
+          },
+          onClose: () {
+            scannerService.stopScan();
+            Navigator.pop(ctx);
           },
         );
       },
@@ -874,6 +747,194 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen>
               TagWidget(isOn: isConnected),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Stateful bottom sheet that subscribes to the scan stream and rebuilds
+/// as new devices are discovered.
+class _DeviceScanSheet extends StatefulWidget {
+  final Stream<List<ScannedDevice>> scanStream;
+  final BleScannerService scannerService;
+  final bool forHr;
+  final bool Function(ScannedDevice) isTrainer;
+  final bool Function(ScannedDevice) isHrMonitor;
+  final Widget Function(int rssi) buildSignalBars;
+  final void Function(ScannedDevice device) onDeviceSelected;
+  final VoidCallback onClose;
+
+  const _DeviceScanSheet({
+    required this.scanStream,
+    required this.scannerService,
+    required this.forHr,
+    required this.isTrainer,
+    required this.isHrMonitor,
+    required this.buildSignalBars,
+    required this.onDeviceSelected,
+    required this.onClose,
+  });
+
+  @override
+  State<_DeviceScanSheet> createState() => _DeviceScanSheetState();
+}
+
+class _DeviceScanSheetState extends State<_DeviceScanSheet> {
+  List<ScannedDevice> _devices = [];
+  bool _isScanning = true;
+  late final StreamSubscription<List<ScannedDevice>> _subscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _subscription = widget.scanStream.listen(
+      (devices) {
+        if (mounted) {
+          setState(() {
+            _devices = devices;
+          });
+        }
+      },
+      onDone: () {
+        if (mounted) setState(() => _isScanning = false);
+      },
+      onError: (_) {
+        if (mounted) setState(() => _isScanning = false);
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final relevantDevices = widget.forHr
+        ? _devices
+            .where((d) => widget.isHrMonitor(d) && !widget.isTrainer(d))
+            .toList()
+        : _devices.where(widget.isTrainer).toList();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.screenSide,
+        AppSpacing.xxl,
+        AppSpacing.screenSide,
+        40,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                widget.forHr ? 'Select HR Monitor' : 'Select Trainer',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.dark,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              GestureDetector(
+                onTap: widget.onClose,
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: AppColors.card,
+                    border: Border.all(color: AppColors.dark, width: 2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  alignment: Alignment.center,
+                  child: const Text(
+                    '\u2715',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: AppColors.dark,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          if (_isScanning && relevantDevices.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: Column(
+                  children: [
+                    SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.teal,
+                      ),
+                    ),
+                    SizedBox(height: 12),
+                    Text(
+                      'SCANNING...',
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 2,
+                        color: AppColors.muted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ...relevantDevices.map((device) {
+            return GestureDetector(
+              onTap: () => widget.onDeviceSelected(device),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                decoration: BoxDecoration(
+                  color: AppColors.card,
+                  border: Border.all(color: AppColors.dark, width: 3),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            device.name,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w900,
+                              color: AppColors.dark,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            device.id,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.muted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    widget.buildSignalBars(device.rssi),
+                  ],
+                ),
+              ),
+            );
+          }),
+        ],
       ),
     );
   }

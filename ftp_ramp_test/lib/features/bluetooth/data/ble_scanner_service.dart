@@ -34,6 +34,7 @@ class ScannedDevice {
 /// Shared BLE scanning service used by both trainer and HR monitor flows
 class BleScannerService {
   StreamSubscription? _scanSubscription;
+  StreamSubscription? _isScanningSubscription;
   final _discoveredDevices = <String, BluetoothDevice>{};
 
   /// Scan for BLE devices, returning a stream of discovered devices.
@@ -86,12 +87,26 @@ class BleScannerService {
           rssi: scanResult.rssi,
         );
       }
-      controller.add(devices.values.toList());
+      if (!controller.isClosed) {
+        controller.add(devices.values.toList());
+      }
+    });
+
+    // Close the stream when scanning stops (timeout or manual stop)
+    _isScanningSubscription?.cancel();
+    _isScanningSubscription = FlutterBluePlus.isScanning.listen((scanning) {
+      if (!scanning && !controller.isClosed) {
+        controller.close();
+        _isScanningSubscription?.cancel();
+        _isScanningSubscription = null;
+      }
     });
 
     controller.onCancel = () {
       _scanSubscription?.cancel();
       _scanSubscription = null;
+      _isScanningSubscription?.cancel();
+      _isScanningSubscription = null;
     };
 
     return controller.stream;
@@ -101,6 +116,8 @@ class BleScannerService {
   Future<void> stopScan() async {
     _scanSubscription?.cancel();
     _scanSubscription = null;
+    _isScanningSubscription?.cancel();
+    _isScanningSubscription = null;
     try {
       await FlutterBluePlus.stopScan();
     } catch (_) {}
@@ -117,6 +134,7 @@ class BleScannerService {
 
   void dispose() {
     _scanSubscription?.cancel();
+    _isScanningSubscription?.cancel();
   }
 }
 
