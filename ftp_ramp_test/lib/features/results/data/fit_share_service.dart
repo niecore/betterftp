@@ -14,7 +14,7 @@ class FitShareService {
       : _exportService = exportService ?? FitExportService();
 
   /// Encodes the test state, writes to a temp file, and opens the share sheet.
-  Future<void> shareTestResult(RampTestState state) async {
+  Future<void> shareTestResult(TestRunState state) async {
     final bytes = _exportService.encode(state);
 
     final tempDir = await getTemporaryDirectory();

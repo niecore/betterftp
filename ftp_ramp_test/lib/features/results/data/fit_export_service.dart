@@ -2,9 +2,10 @@ import 'dart:typed_data';
 
 import 'package:fit_sdk/fit_sdk.dart';
 
+import '../../ramp_test/domain/ftp_calculator.dart';
 import '../../ramp_test/domain/ramp_test_state.dart';
 
-/// Converts a completed [RampTestState] into FIT binary bytes.
+/// Converts a completed [TestRunState] into FIT binary bytes.
 class FitExportService {
   /// FIT epoch offset: FIT timestamps = Unix seconds − 631065600.
   static const int _fitEpochOffset = 631065600;
@@ -13,14 +14,18 @@ class FitExportService {
       (dt.millisecondsSinceEpoch ~/ 1000) - _fitEpochOffset;
 
   /// Encodes the test state into a valid FIT activity file.
-  Uint8List encode(RampTestState state) {
-    final readings = state.powerReadings;
-    if (readings.isEmpty) {
+  ///
+  /// All readings (including warmup) are written as Record messages so the
+  /// FIT file reflects the full ride. Session-level averages also cover the
+  /// full activity for accurate import into Garmin Connect, Strava, etc.
+  Uint8List encode(TestRunState state) {
+    final allReadings = state.allReadings;
+    if (allReadings.isEmpty) {
       throw StateError('No power readings to export');
     }
 
-    final startTime = readings.first.timestamp;
-    final endTime = readings.last.timestamp;
+    final startTime = allReadings.first.timestamp;
+    final endTime = allReadings.last.timestamp;
     final fitStart = _toFitTimestamp(startTime);
     final fitEnd = _toFitTimestamp(endTime);
     final totalElapsed =
@@ -32,13 +37,13 @@ class FitExportService {
     // --- FileId (must be first) ---
     _writeFileId(encoder, fitStart);
 
-    // --- Record messages (one per PowerReading) ---
-    _writeRecords(encoder, readings);
+    // --- Record messages (one per PowerReading, all phases) ---
+    _writeRecords(encoder, allReadings);
 
     // --- Lap (one covering entire activity) ---
     _writeLap(encoder, state, fitStart, fitEnd, totalElapsed);
 
-    // --- Session ---
+    // --- Session (averages cover full activity) ---
     _writeSession(encoder, state, fitStart, fitEnd, totalElapsed);
 
     // --- Activity (must be last) ---
@@ -82,7 +87,7 @@ class FitExportService {
 
   void _writeLap(
     Encode encoder,
-    RampTestState state,
+    TestRunState state,
     int fitStart,
     int fitEnd,
     double totalElapsed,
@@ -102,7 +107,7 @@ class FitExportService {
 
   void _writeSession(
     Encode encoder,
-    RampTestState state,
+    TestRunState state,
     int fitStart,
     int fitEnd,
     double totalElapsed,
@@ -117,17 +122,16 @@ class FitExportService {
     mesg.setFieldValue(7, (totalElapsed * 1000).round()); // total_elapsed_time
     mesg.setFieldValue(8, (totalElapsed * 1000).round()); // total_timer_time
 
-    // Power stats
-    final avgPower = state.powerReadings.isEmpty
-        ? 0
-        : state.powerReadings.fold<int>(0, (s, r) => s + r.power) ~/
-            state.powerReadings.length;
+    // Power stats (time-weighted)
+    final avgPower =
+        FtpCalculator.averagePower(state.allReadings).round();
     mesg.setFieldValue(20, avgPower); // avg_power
     mesg.setFieldValue(21, state.maxPower); // max_power
 
-    // HR stats
-    if (state.averageHeartRate != null) {
-      mesg.setFieldValue(16, state.averageHeartRate!); // avg_heart_rate
+    // HR stats (time-weighted)
+    final avgHr = FtpCalculator.averageHeartRate(state.allReadings);
+    if (avgHr != null) {
+      mesg.setFieldValue(16, avgHr.round()); // avg_heart_rate
     }
     if (state.maxHeartRate != null) {
       mesg.setFieldValue(17, state.maxHeartRate!); // max_heart_rate

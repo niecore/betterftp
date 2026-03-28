@@ -137,20 +137,4 @@ class FtpCalculator {
     return (ridingAvg * ridingDuration) / windowSeconds;
   }
 
-  /// Calculate FTP based on protocol:
-  /// - Ramp: best 1-min avg × 0.75
-  /// - 20 min: avg power over full 20 min (zero-filled if stopped early) × 0.95
-  static int calculateFtp(
-    List<PowerReading> readings, [
-    TestProtocol protocol = TestProtocol.ramp,
-  ]) {
-    switch (protocol) {
-      case TestProtocol.ramp:
-        final best = bestOneMinuteAverage(readings);
-        return (best * 0.75).round();
-      case TestProtocol.twentyMin:
-        final avg = averagePowerOverWindow(readings, 20 * 60);
-        return (avg * 0.95).round();
-    }
-  }
 }

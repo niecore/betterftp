@@ -1,5 +1,9 @@
 import 'package:flutter/foundation.dart';
 
+import 'ftp_calculator.dart';
+import 'test_phase.dart';
+
+/// Identifies which protocol is selected (used for routing / serialisation).
 enum TestProtocol {
   ramp('Ramp'),
   twentyMin('20 Min');
@@ -8,8 +12,10 @@ enum TestProtocol {
   const TestProtocol(this.label);
 }
 
-enum RampTestPhase { idle, warmup, ramping, sustained, completed, failed }
+/// High-level lifecycle of the test session.
+enum TestLifecycle { idle, running, completed, failed }
 
+/// A single power data point from the trainer.
 @immutable
 class PowerReading {
   final DateTime timestamp;
@@ -23,98 +29,140 @@ class PowerReading {
   });
 }
 
+/// Sentinel phase used as the default before a protocol is selected.
+const _idlePhase = TestPhase(id: 'idle', displayName: 'Idle');
+
+/// Immutable state for the test session.
+///
+/// Protocol-specific counters live in [counters] so the state class
+/// doesn't need fields for every protocol variant.
 @immutable
-class RampTestState {
-  final RampTestPhase phase;
+class TestRunState {
+  // ── Lifecycle ─────────────────────────────────────────────────────
+  final TestLifecycle lifecycle;
   final TestProtocol protocol;
-  final int currentStage; // 0-based stage index during ramping
-  final int targetPower; // Current target watts
-  final int elapsedSeconds; // Total elapsed time
-  final int stageElapsedSeconds; // Time within current stage/warmup
-  final int sustainedElapsedSeconds; // Time within sustained phase
-  final int warmupDuration; // Total warmup duration in seconds
-  final int stageDuration; // Duration per ramp stage in seconds
-  final int testDuration; // Total sustained test duration (0 = unlimited/ramp)
-  final List<PowerReading> powerReadings;
+  final TestPhase currentPhase;
+
+  // ── Universal counters ────────────────────────────────────────────
+  final int elapsedSeconds;
+  final int warmupElapsedSeconds;
+  final int stageElapsedSeconds;
+  final int currentStage;
+
+  // ── Protocol-specific counters ────────────────────────────────────
+  final Map<String, int> counters;
+
+  // ── Config (copied from protocol at start) ────────────────────────
+  final int warmupDuration;
+  final int targetPower;
+
+  // ── Sensor data ───────────────────────────────────────────────────
+  final int currentPower;
+  final int currentCadence;
+  final int? currentHeartRate;
+  final int? maxHeartRate;
+
+  // ── Collected data ────────────────────────────────────────────────
+  /// Power readings keyed by phase ID.
+  final Map<String, List<PowerReading>> readingsByPhase;
   final double bestOneMinAvgPower;
   final int? calculatedFtp;
-  final int currentPower; // Latest power reading
-  final int currentCadence; // Latest cadence reading
-  final int? currentHeartRate; // Latest HR reading (null if no HR monitor)
-  final int? maxHeartRate; // Max HR during test (null if no HR monitor)
 
-  const RampTestState({
-    this.phase = RampTestPhase.idle,
+  const TestRunState({
+    this.lifecycle = TestLifecycle.idle,
     this.protocol = TestProtocol.ramp,
-    this.currentStage = 0,
-    this.targetPower = 0,
+    this.currentPhase = _idlePhase,
     this.elapsedSeconds = 0,
+    this.warmupElapsedSeconds = 0,
     this.stageElapsedSeconds = 0,
-    this.sustainedElapsedSeconds = 0,
+    this.currentStage = 0,
+    this.counters = const {},
     this.warmupDuration = 300,
-    this.stageDuration = 60,
-    this.testDuration = 0,
-    this.powerReadings = const [],
-    this.bestOneMinAvgPower = 0,
-    this.calculatedFtp,
+    this.targetPower = 0,
     this.currentPower = 0,
     this.currentCadence = 0,
     this.currentHeartRate,
     this.maxHeartRate,
+    this.readingsByPhase = const {},
+    this.bestOneMinAvgPower = 0,
+    this.calculatedFtp,
   });
 
-  /// Max actual power recorded from the trainer.
+  // ── Convenience getters ───────────────────────────────────────────
+
+  /// All readings across every phase, sorted by timestamp.
+  /// Used for FIT file export (full ride).
+  List<PowerReading> get allReadings {
+    final all = readingsByPhase.values.expand((list) => list).toList();
+    all.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    return all;
+  }
+
+  /// Max power across all phases.
   int get maxPower {
-    if (powerReadings.isEmpty) return 0;
-    return powerReadings.fold<int>(0, (max, r) => r.power > max ? r.power : max);
+    final all = allReadings;
+    if (all.isEmpty) return 0;
+    return all.fold<int>(0, (max, r) => r.power > max ? r.power : max);
   }
 
-  /// Average heart rate across all power readings that have HR data.
+  /// Time-weighted average HR across all phases.
   int? get averageHeartRate {
-    final hrReadings = powerReadings.where((r) => r.heartRate != null).toList();
-    if (hrReadings.isEmpty) return null;
-    final sum = hrReadings.fold<int>(0, (s, r) => s + r.heartRate!);
-    return (sum / hrReadings.length).round();
+    final avg = FtpCalculator.averageHeartRate(allReadings);
+    return avg?.round();
   }
 
-  RampTestState copyWith({
-    RampTestPhase? phase,
+  // ── Copy helper ───────────────────────────────────────────────────
+
+  TestRunState copyWith({
+    TestLifecycle? lifecycle,
     TestProtocol? protocol,
-    int? currentStage,
-    int? targetPower,
+    TestPhase? currentPhase,
     int? elapsedSeconds,
+    int? warmupElapsedSeconds,
     int? stageElapsedSeconds,
-    int? sustainedElapsedSeconds,
+    int? currentStage,
+    Map<String, int>? counters,
     int? warmupDuration,
-    int? stageDuration,
-    int? testDuration,
-    List<PowerReading>? powerReadings,
-    double? bestOneMinAvgPower,
-    int? calculatedFtp,
+    int? targetPower,
     int? currentPower,
     int? currentCadence,
     int? currentHeartRate,
     int? maxHeartRate,
+    Map<String, List<PowerReading>>? readingsByPhase,
+    double? bestOneMinAvgPower,
+    int? calculatedFtp,
   }) {
-    return RampTestState(
-      phase: phase ?? this.phase,
+    return TestRunState(
+      lifecycle: lifecycle ?? this.lifecycle,
       protocol: protocol ?? this.protocol,
-      currentStage: currentStage ?? this.currentStage,
-      targetPower: targetPower ?? this.targetPower,
+      currentPhase: currentPhase ?? this.currentPhase,
       elapsedSeconds: elapsedSeconds ?? this.elapsedSeconds,
+      warmupElapsedSeconds: warmupElapsedSeconds ?? this.warmupElapsedSeconds,
       stageElapsedSeconds: stageElapsedSeconds ?? this.stageElapsedSeconds,
-      sustainedElapsedSeconds:
-          sustainedElapsedSeconds ?? this.sustainedElapsedSeconds,
+      currentStage: currentStage ?? this.currentStage,
+      counters: counters ?? this.counters,
       warmupDuration: warmupDuration ?? this.warmupDuration,
-      stageDuration: stageDuration ?? this.stageDuration,
-      testDuration: testDuration ?? this.testDuration,
-      powerReadings: powerReadings ?? this.powerReadings,
-      bestOneMinAvgPower: bestOneMinAvgPower ?? this.bestOneMinAvgPower,
-      calculatedFtp: calculatedFtp ?? this.calculatedFtp,
+      targetPower: targetPower ?? this.targetPower,
       currentPower: currentPower ?? this.currentPower,
       currentCadence: currentCadence ?? this.currentCadence,
       currentHeartRate: currentHeartRate ?? this.currentHeartRate,
       maxHeartRate: maxHeartRate ?? this.maxHeartRate,
+      readingsByPhase: readingsByPhase ?? this.readingsByPhase,
+      bestOneMinAvgPower: bestOneMinAvgPower ?? this.bestOneMinAvgPower,
+      calculatedFtp: calculatedFtp ?? this.calculatedFtp,
+    );
+  }
+
+  /// Apply a [TestTickResult] from the protocol's onTick.
+  TestRunState applyTickResult(TestTickResult result, int newElapsed) {
+    return copyWith(
+      elapsedSeconds: newElapsed,
+      currentPhase: result.newPhase ?? currentPhase,
+      targetPower: result.newTargetPower ?? targetPower,
+      currentStage: result.newStageIndex ?? currentStage,
+      stageElapsedSeconds:
+          result.newStageIndex != null ? 0 : stageElapsedSeconds + 1,
+      counters: {...counters, ...result.counters},
     );
   }
 }

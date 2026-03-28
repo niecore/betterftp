@@ -15,7 +15,23 @@
       "Bash(open /Users/mui2lol/playground/ftp-test/design/hud-summary-options.html)",
       "Bash(flutter build ios --no-codesign)",
       "WebFetch(domain:gist.github.com)",
-      "WebFetch(domain:developer.garmin.com)"
+      "WebFetch(domain:developer.garmin.com)",
+      "Bash(find:*)",
+      "Read(//opt/homebrew/bin/**)",
+      "Read(//usr/local/bin/**)",
+      "Bash(nix-shell -p ffmpeg --run \"which ffmpeg\")",
+      "Bash(nix develop:*)",
+      "Bash(nix-shell -p ffmpeg-full --run 'which ffmpeg')",
+      "Bash(nix-shell -p ffmpeg-full --run \"ffprobe -v quiet -show_entries format=duration -of csv=p=0 /Users/mui2lol/playground/ftp-test/ftp_ramp_test/assets/animations/hamster.mp4\")",
+      "Bash(nix-shell -p ffmpeg-full --run 'for f in /Users/mui2lol/playground/ftp-test/website/frames/hamster-*.png; do ffmpeg -i \"\"\"\"$f\"\"\"\" -quality 75 \"\"\"\"${f%.png}.webp\"\"\"\" -y 2>/dev/null; done')",
+      "Bash(ls -la /Users/mui2lol/playground/ftp-test/website/frames/*.webp)",
+      "Bash(grep -E \"\\\\.\\(dart|html\\)$\")",
+      "Bash(nix-shell -p imagemagick --run \"identify /Users/mui2lol/playground/ftp-test/design/assets/hamster-still.png\")",
+      "Bash(nix-shell -p imagemagick --run \"convert ../design/assets/hamster-still.png -resize 180x180 -background ''#F5F5F0'' -gravity center -extent 180x180 apple-touch-icon.png && convert ../design/assets/hamster-still.png -resize 32x32 -background ''#F5F5F0'' -gravity center -extent 32x32 favicon-32.png && convert ../design/assets/hamster-still.png -resize 16x16 -background ''#F5F5F0'' -gravity center -extent 16x16 favicon-16.png && convert favicon-16.png favicon-32.png favicon.ico && ls -la favicon.ico apple-touch-icon.png favicon-16.png favicon-32.png\")",
+      "Bash(brew install:*)",
+      "WebFetch(domain:developer.huawei.com)",
+      "WebFetch(domain:devzone.nordicsemi.com)",
+      "WebFetch(domain:api.github.com)"
     ]
   }
 }

@@ -4,11 +4,12 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../shared/widgets/app_button.dart';
+import '../../ramp_test/domain/protocol_registry.dart';
 import '../../ramp_test/domain/ramp_test_state.dart';
 import '../data/fit_share_service.dart';
 
 class ResultsScreen extends StatefulWidget {
-  final RampTestState testState;
+  final TestRunState testState;
 
   const ResultsScreen({super.key, required this.testState});
 
@@ -23,6 +24,39 @@ class _ResultsScreenState extends State<ResultsScreen> {
     final minutes = totalSeconds ~/ 60;
     final seconds = totalSeconds % 60;
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  Widget _buildSummaryRows() {
+    final protocol = ProtocolRegistry.get(widget.testState.protocol);
+    final extraMetrics = protocol.resultMetrics(widget.testState);
+
+    final rows = <Map<String, String>>[
+      for (final metric in extraMetrics)
+        {'label': metric.label, 'value': metric.value},
+      {'label': 'Max Power', 'value': '${widget.testState.maxPower} W'},
+      if (widget.testState.maxHeartRate != null)
+        {
+          'label': 'Max Heart Rate',
+          'value': '${widget.testState.maxHeartRate} BPM'
+        },
+      if (widget.testState.averageHeartRate != null)
+        {
+          'label': 'Avg Heart Rate',
+          'value': '${widget.testState.averageHeartRate} BPM'
+        },
+      {'label': 'Protocol', 'value': widget.testState.protocol.label},
+    ];
+
+    return Column(
+      children: [
+        for (int i = 0; i < rows.length; i++)
+          _DetailRow(
+            label: rows[i]['label']!,
+            value: rows[i]['value']!,
+            isLast: i == rows.length - 1,
+          ),
+      ],
+    );
   }
 
   Future<void> _shareFitFile() async {
@@ -336,46 +370,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                               ),
                               Container(
                                 color: AppColors.card,
-                                child: Column(
-                                  children: [
-                                    if (widget.testState.protocol ==
-                                        TestProtocol.ramp)
-                                      _DetailRow(
-                                        label: 'Best 1-min Avg',
-                                        value:
-                                            '${widget.testState.bestOneMinAvgPower.round()} W',
-                                      ),
-                                    _DetailRow(
-                                      label: 'Max Power',
-                                      value:
-                                          '${widget.testState.maxPower} W',
-                                    ),
-                                    if (widget.testState.maxHeartRate != null)
-                                      _DetailRow(
-                                        label: 'Max Heart Rate',
-                                        value:
-                                            '${widget.testState.maxHeartRate} BPM',
-                                      ),
-                                    if (widget.testState.averageHeartRate != null)
-                                      _DetailRow(
-                                        label: 'Avg Heart Rate',
-                                        value:
-                                            '${widget.testState.averageHeartRate} BPM',
-                                      ),
-                                    if (widget.testState.protocol ==
-                                        TestProtocol.ramp)
-                                      _DetailRow(
-                                        label: 'Stages Completed',
-                                        value:
-                                            '${widget.testState.currentStage + 1}',
-                                      ),
-                                    _DetailRow(
-                                      label: 'Protocol',
-                                      value: widget.testState.protocol.label,
-                                      isLast: true,
-                                    ),
-                                  ],
-                                ),
+                                child: _buildSummaryRows(),
                               ),
                             ],
                           ),

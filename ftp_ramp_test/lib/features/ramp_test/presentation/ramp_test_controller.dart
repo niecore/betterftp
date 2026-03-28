@@ -5,11 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../bluetooth/data/hr_repository.dart';
 import '../../bluetooth/data/trainer_repository.dart';
 import '../domain/ftp_calculator.dart';
-import '../domain/ramp_test_config.dart';
+import '../domain/protocol_registry.dart';
 import '../domain/ramp_test_state.dart';
+import '../domain/test_protocol_definition.dart';
 
-class RampTestController extends Notifier<RampTestState> {
-  RampTestConfig _config = const RampTestConfig();
+class RampTestController extends Notifier<TestRunState> {
+  late TestProtocolDefinition _protocol;
 
   Timer? _timer;
   StreamSubscription? _dataSubscription;
@@ -21,44 +22,39 @@ class RampTestController extends Notifier<RampTestState> {
   HrRepository get _hrRepository => ref.read(hrRepositoryProvider);
 
   @override
-  RampTestState build() => const RampTestState();
+  TestRunState build() => const TestRunState();
 
   void start([TestProtocol protocol = TestProtocol.ramp]) {
-    if (state.phase != RampTestPhase.idle) return;
+    if (state.lifecycle != TestLifecycle.idle) return;
 
-    _config = RampTestConfig.forProtocol(protocol);
+    _protocol = ProtocolRegistry.get(protocol);
 
-    // Start warmup phase
     state = state.copyWith(
-      phase: RampTestPhase.warmup,
+      lifecycle: TestLifecycle.running,
       protocol: protocol,
-      targetPower: _config.warmupPower,
+      currentPhase: _protocol.warmupPhase,
+      targetPower: _protocol.warmupPower,
       elapsedSeconds: 0,
+      warmupElapsedSeconds: 0,
       stageElapsedSeconds: 0,
-      sustainedElapsedSeconds: 0,
-      warmupDuration: _config.warmupDuration,
-      stageDuration: _config.stageDuration,
-      testDuration: _config.testDuration,
       currentStage: 0,
-      powerReadings: [],
+      counters: {},
+      warmupDuration: _protocol.warmupDurationSeconds,
+      readingsByPhase: {},
       bestOneMinAvgPower: 0,
       calculatedFtp: null,
     );
 
-    _trainerRepository.setTargetPower(_config.warmupPower);
+    _trainerRepository.setTargetPower(_protocol.warmupPower);
 
     // Listen to HR data if connected
     _hrSubscription = _hrRepository.hrDataStream.listen((hrData) {
       _latestHr = hrData.heartRate;
     });
 
-    // Listen to trainer data
+    // Listen to trainer data — append to current phase's reading list
     _dataSubscription = _trainerRepository.trainerDataStream.listen((data) {
-      if (state.phase == RampTestPhase.idle ||
-          state.phase == RampTestPhase.completed ||
-          state.phase == RampTestPhase.failed) {
-        return;
-      }
+      if (state.lifecycle != TestLifecycle.running) return;
 
       final reading = PowerReading(
         timestamp: data.timestamp,
@@ -66,8 +62,24 @@ class RampTestController extends Notifier<RampTestState> {
         heartRate: _latestHr,
       );
 
-      final readings = [...state.powerReadings, reading];
-      final bestAvg = FtpCalculator.bestOneMinuteAverage(readings);
+      // Append reading to the current phase's list
+      final phaseId = state.currentPhase.id;
+      final updatedPhaseList = <PowerReading>[
+        ...state.readingsByPhase[phaseId] ?? [],
+        reading,
+      ];
+      final updatedMap = <String, List<PowerReading>>{
+        ...state.readingsByPhase,
+        phaseId: updatedPhaseList,
+      };
+
+      // Compute best 1-min average on test-phase readings only
+      final testReadings = updatedMap.entries
+          .where((e) => _isTestPhaseId(e.key))
+          .expand<PowerReading>((e) => e.value)
+          .toList()
+        ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      final bestAvg = FtpCalculator.bestOneMinuteAverage(testReadings);
 
       final currentHr = _latestHr;
       final maxHr = currentHr != null
@@ -81,7 +93,7 @@ class RampTestController extends Notifier<RampTestState> {
       state = state.copyWith(
         currentPower: data.power,
         currentCadence: data.cadence,
-        powerReadings: readings,
+        readingsByPhase: updatedMap,
         bestOneMinAvgPower: bestAvg,
         currentHeartRate: currentHr,
         maxHeartRate: maxHr,
@@ -92,106 +104,74 @@ class RampTestController extends Notifier<RampTestState> {
     _timer = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
   }
 
+  /// Check if a phase ID corresponds to a test phase in the current protocol.
+  bool _isTestPhaseId(String phaseId) {
+    if (phaseId == _protocol.initialTestPhase.id) return true;
+    // Warmup is never a test phase
+    return false;
+  }
+
   void _tick() {
-    if (state.phase == RampTestPhase.completed ||
-        state.phase == RampTestPhase.failed ||
-        state.phase == RampTestPhase.idle) {
-      return;
-    }
+    if (state.lifecycle != TestLifecycle.running) return;
 
     final newElapsed = state.elapsedSeconds + 1;
-    final newStageElapsed = state.stageElapsedSeconds + 1;
 
-    if (state.phase == RampTestPhase.warmup) {
-      if (newStageElapsed >= _config.warmupDuration) {
-        // Transition based on protocol
-        final targetPower = _config.startPower;
-        _trainerRepository.setTargetPower(targetPower);
-        if (state.protocol == TestProtocol.ramp) {
-          state = state.copyWith(
-            phase: RampTestPhase.ramping,
-            elapsedSeconds: newElapsed,
-            stageElapsedSeconds: 0,
-            currentStage: 0,
-            targetPower: targetPower,
-          );
-        } else {
-          state = state.copyWith(
-            phase: RampTestPhase.sustained,
-            elapsedSeconds: newElapsed,
-            stageElapsedSeconds: 0,
-            sustainedElapsedSeconds: 0,
-            targetPower: targetPower,
-          );
-        }
-      } else {
-        state = state.copyWith(
-          elapsedSeconds: newElapsed,
-          stageElapsedSeconds: newStageElapsed,
-        );
-      }
-    } else if (state.phase == RampTestPhase.ramping) {
-      if (newStageElapsed >= _config.stageDuration) {
-        // Next stage
-        final newStage = state.currentStage + 1;
-        final targetPower =
-            _config.startPower + (newStage * _config.increment);
+    // ── Warmup (generic for all protocols) ──
+    if (state.currentPhase.isWarmup) {
+      final newWarmup = state.warmupElapsedSeconds + 1;
+      if (newWarmup >= _protocol.warmupDurationSeconds) {
+        // Transition to the protocol's initial test phase
+        final targetPower = _protocol.initialTestPower;
         _trainerRepository.setTargetPower(targetPower);
         state = state.copyWith(
           elapsedSeconds: newElapsed,
+          warmupElapsedSeconds: newWarmup,
+          currentPhase: _protocol.initialTestPhase,
           stageElapsedSeconds: 0,
-          currentStage: newStage,
+          currentStage: 0,
           targetPower: targetPower,
         );
       } else {
         state = state.copyWith(
           elapsedSeconds: newElapsed,
-          stageElapsedSeconds: newStageElapsed,
+          warmupElapsedSeconds: newWarmup,
         );
       }
-    } else if (state.phase == RampTestPhase.sustained) {
-      final newSustained = state.sustainedElapsedSeconds + 1;
-      if (_config.testDuration > 0 && newSustained >= _config.testDuration) {
-        // Auto-complete when test duration reached
-        stop();
-        return;
-      }
-      state = state.copyWith(
-        elapsedSeconds: newElapsed,
-        sustainedElapsedSeconds: newSustained,
-      );
+      return;
+    }
+
+    // ── Test phase (delegated to protocol) ──
+    final result = _protocol.onTick(state);
+
+    if (result.shouldComplete) {
+      stop();
+      return;
+    }
+
+    state = state.applyTickResult(result, newElapsed);
+
+    if (result.newTargetPower != null) {
+      _trainerRepository.setTargetPower(result.newTargetPower!);
     }
   }
 
   void adjustPower(int delta) {
-    if (state.phase != RampTestPhase.warmup &&
-        state.phase != RampTestPhase.sustained) {
-      return;
-    }
+    if (!state.currentPhase.allowsManualPower) return;
     final newPower = (state.targetPower + delta).clamp(50, 500);
     state = state.copyWith(targetPower: newPower);
     _trainerRepository.setTargetPower(newPower);
   }
 
   void skipWarmup() {
-    if (state.phase != RampTestPhase.warmup) return;
-    final targetPower = _config.startPower;
+    if (!state.currentPhase.isWarmup) return;
+    final targetPower = _protocol.initialTestPower;
     _trainerRepository.setTargetPower(targetPower);
-    if (state.protocol == TestProtocol.ramp) {
-      state = state.copyWith(
-        phase: RampTestPhase.ramping,
-        stageElapsedSeconds: 0,
-        currentStage: 0,
-        targetPower: targetPower,
-      );
-    } else {
-      state = state.copyWith(
-        phase: RampTestPhase.sustained,
-        stageElapsedSeconds: 0,
-        sustainedElapsedSeconds: 0,
-        targetPower: targetPower,
-      );
-    }
+    state = state.copyWith(
+      currentPhase: _protocol.initialTestPhase,
+      stageElapsedSeconds: 0,
+      currentStage: 0,
+      targetPower: targetPower,
+    );
   }
 
   void stop() {
@@ -202,16 +182,16 @@ class RampTestController extends Notifier<RampTestState> {
     _hrSubscription?.cancel();
     _hrSubscription = null;
 
-    final ftp = FtpCalculator.calculateFtp(state.powerReadings, state.protocol);
+    final ftp = _protocol.calculateFtp(state.readingsByPhase);
 
     state = state.copyWith(
-      phase: RampTestPhase.completed,
+      lifecycle: TestLifecycle.completed,
       calculatedFtp: ftp,
     );
   }
 }
 
 final rampTestControllerProvider =
-    NotifierProvider<RampTestController, RampTestState>(
+    NotifierProvider<RampTestController, TestRunState>(
   RampTestController.new,
 );

@@ -28,7 +28,7 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/results',
       builder: (context, state) {
-        final testState = state.extra as RampTestState;
+        final testState = state.extra as TestRunState;
         return ResultsScreen(testState: testState);
       },
     ),

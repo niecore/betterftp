@@ -12,7 +12,10 @@ import '../../../shared/widgets/hud_stepped_progress.dart';
 import '../../../shared/widgets/hud_summary_pills.dart';
 import '../../../shared/widgets/hud_vitals_row.dart';
 import '../../../shared/widgets/live_badge.dart';
+import '../domain/protocol_registry.dart';
+import '../domain/protocols/twenty_min_protocol.dart';
 import '../domain/ramp_test_state.dart';
+import '../domain/test_phase.dart';
 import 'ramp_test_controller.dart';
 
 class RampTestScreen extends ConsumerStatefulWidget {
@@ -57,30 +60,19 @@ class _RampTestScreenState extends ConsumerState<RampTestScreen> {
   }
 
   /// Compute average power across all power readings.
-  int _avgPower(RampTestState state) {
-    if (state.powerReadings.isEmpty) return 0;
-    final sum = state.powerReadings.fold<int>(0, (s, r) => s + r.power);
-    return (sum / state.powerReadings.length).round();
+  int _avgPower(TestRunState state) {
+    final all = state.allReadings;
+    if (all.isEmpty) return 0;
+    final sum = all.fold<int>(0, (s, r) => s + r.power);
+    return (sum / all.length).round();
   }
 
   /// Compute efficiency: avg power / target power as percentage.
-  String _efficiency(RampTestState state) {
+  String _efficiency(TestRunState state) {
     if (state.targetPower <= 0) return '--';
     final avg = _avgPower(state);
     final eff = ((avg / state.targetPower) * 100).round();
     return '$eff%';
-  }
-
-  /// Get the header text for the HUD — depends on phase.
-  String _headerText(RampTestState state) {
-    if (state.phase == RampTestPhase.warmup) {
-      return 'Warmup';
-    } else if (state.phase == RampTestPhase.ramping) {
-      return 'Stage ${state.currentStage + 1}';
-    } else if (state.phase == RampTestPhase.sustained) {
-      return state.protocol.label;
-    }
-    return 'Ready';
   }
 
   /// Estimated total stages for a ramp test (for progress display).
@@ -90,28 +82,30 @@ class _RampTestScreenState extends ConsumerState<RampTestScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(rampTestControllerProvider);
     final controller = ref.read(rampTestControllerProvider.notifier);
+    final protocol = ProtocolRegistry.get(widget.protocol);
 
     ref.listen(rampTestControllerProvider, (previous, next) {
-      if (next.phase == RampTestPhase.completed &&
-          previous?.phase != RampTestPhase.completed) {
+      if (next.lifecycle == TestLifecycle.completed &&
+          previous?.lifecycle != TestLifecycle.completed) {
         context.go('/results', extra: next);
       }
     });
 
-    final isRunning = state.phase == RampTestPhase.warmup ||
-        state.phase == RampTestPhase.ramping ||
-        state.phase == RampTestPhase.sustained;
-    final isWarmup = state.phase == RampTestPhase.warmup;
-    final isSustained = state.phase == RampTestPhase.sustained;
+    final isRunning = state.lifecycle == TestLifecycle.running;
+    final isWarmup = state.currentPhase.isWarmup;
+    final progressType = protocol.progressWidgetType(state.currentPhase);
 
-    // Interval timing
-    final intervalDone = state.stageElapsedSeconds;
-    final intervalTotal = isWarmup ? state.warmupDuration : state.stageDuration;
+    // Interval timing (warmup + ramp stages)
+    final intervalDone =
+        isWarmup ? state.warmupElapsedSeconds : state.stageElapsedSeconds;
+    final intervalTotal =
+        isWarmup ? state.warmupDuration : 60; // stage duration for ramp
     final intervalLeft = (intervalTotal - intervalDone).clamp(0, 99999);
 
-    // For sustained mode, use sustainedElapsedSeconds
-    final sustainedDone = state.sustainedElapsedSeconds;
-    final sustainedTotal = state.testDuration;
+    // Sustained mode timing
+    final sustainedDone = state.counters['sustainedElapsed'] ?? 0;
+    final sustainedTotal =
+        protocol is TwentyMinProtocol ? protocol.testDuration : 0;
     final sustainedLeft =
         sustainedTotal > 0 ? (sustainedTotal - sustainedDone).clamp(0, 99999) : 0;
 
@@ -136,13 +130,13 @@ class _RampTestScreenState extends ConsumerState<RampTestScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // ── Top bar: "Ramp Test" + Live badge ──
+              // ── Top bar: title + Live badge ──
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Ramp Test',
-                    style: TextStyle(
+                  Text(
+                    '${protocol.label} Test',
+                    style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w900,
                       color: AppColors.dark,
@@ -167,7 +161,7 @@ class _RampTestScreenState extends ConsumerState<RampTestScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // ── Teal header: stage name + target ──
+                        // ── Teal header: phase name ──
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.symmetric(
@@ -176,7 +170,7 @@ class _RampTestScreenState extends ConsumerState<RampTestScreen> {
                           ),
                           color: AppColors.teal,
                           child: Text(
-                            _headerText(state).toUpperCase(),
+                            protocol.headerText(state).toUpperCase(),
                             style: const TextStyle(
                               fontSize: 9,
                               fontWeight: FontWeight.w700,
@@ -186,14 +180,17 @@ class _RampTestScreenState extends ConsumerState<RampTestScreen> {
                           ),
                         ),
 
-                        // ── Interval section: Done/Left + segment bar ──
+                        // ── Interval section ──
                         HudIntervalSection(
-                          elapsedSeconds:
-                              isSustained ? sustainedDone : intervalDone,
-                          remainingSeconds:
-                              isSustained ? sustainedLeft : intervalLeft,
-                          totalDuration:
-                              isSustained ? sustainedTotal : intervalTotal,
+                          elapsedSeconds: progressType == ProgressWidgetType.linear
+                              ? sustainedDone
+                              : intervalDone,
+                          remainingSeconds: progressType == ProgressWidgetType.linear
+                              ? sustainedLeft
+                              : intervalLeft,
+                          totalDuration: progressType == ProgressWidgetType.linear
+                              ? sustainedTotal
+                              : intervalTotal,
                         ),
 
                         // ── Power zone ──
@@ -208,15 +205,16 @@ class _RampTestScreenState extends ConsumerState<RampTestScreen> {
                           cadence: state.currentCadence,
                         ),
 
-                        // ── Stepped progress footer (ramp/warmup) ──
-                        if (!isSustained)
+                        // ── Progress footer (protocol-driven) ──
+                        if (progressType == ProgressWidgetType.stepped)
                           HudSteppedProgress(
                             totalStages: _totalStages,
                             currentStage: displayStage,
                           ),
 
-                        // ── Sustained progress footer (20min/8min) ──
-                        if (isSustained && sustainedTotal > 0)
+                        if (progressType == ProgressWidgetType.linear &&
+                            !isWarmup &&
+                            sustainedTotal > 0)
                           _SustainedProgressFooter(
                             elapsed: sustainedDone,
                             total: sustainedTotal,
@@ -228,7 +226,7 @@ class _RampTestScreenState extends ConsumerState<RampTestScreen> {
 
               if (isRunning) const SizedBox(height: 10),
 
-              // ── Warmup skip bar (above summary pills) ──
+              // ── Warmup skip bar ──
               if (isWarmup) ...[
                 _WarmupSkipBar(
                   targetPower: state.targetPower,
@@ -249,7 +247,7 @@ class _RampTestScreenState extends ConsumerState<RampTestScreen> {
                 ),
 
               // ── Idle state: prompt ──
-              if (state.phase == RampTestPhase.idle) ...[
+              if (state.lifecycle == TestLifecycle.idle) ...[
                 const Spacer(),
                 Center(
                   child: Column(
@@ -265,7 +263,7 @@ class _RampTestScreenState extends ConsumerState<RampTestScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        widget.protocol.label.toUpperCase(),
+                        protocol.label.toUpperCase(),
                         style: const TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.w900,
@@ -282,7 +280,7 @@ class _RampTestScreenState extends ConsumerState<RampTestScreen> {
               if (isRunning) const Spacer(),
 
               // ── Buttons ──
-              if (state.phase == RampTestPhase.idle) ...[
+              if (state.lifecycle == TestLifecycle.idle) ...[
                 AppButton(
                   label: 'Start Test',
                   variant: AppButtonVariant.primary,
