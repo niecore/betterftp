@@ -66,7 +66,9 @@ See PLAN.md for full architecture. Key directories:
 
 ## Current Status
 
-- [ ] Project not yet created
+- Flutter project exists at `ftp_ramp_test/` with BLE/FTMS, ramp test logic, HUD UI, results + FIT export implemented
+- Website static landing page at `website/` (deployed to Cloudflare Pages, domain `betterftp.cc`)
+- Open: Hive result persistence, unit tests, hardware verification, Firebase App Distribution beta setup
 - Refer to PLAN.md Section 8 for implementation phases
 
 ## Development Setup

@@ -16,6 +16,7 @@ pubspec.lock
 *.swp
 *.swo
 .vscode/
+.claude/
 
 # macOS
 .DS_Store

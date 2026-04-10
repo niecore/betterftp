@@ -4,7 +4,7 @@
 
 **App name:** FTP.TEST  
 **Tagline:** Power Lab  
-**Domain:** ftptests.icu  
+**Domain:** betterftp.cc
 **Purpose:** Cycling FTP (Functional Threshold Power) testing app  
 
 ---

@@ -1,7 +1,7 @@
 # FTP.TEST Design System
 
 **App:** FTP.TEST — Power Lab  
-**Domain:** ftptests.icu  
+**Domain:** betterftp.cc
 **Version:** 1.0  
 **Style:** Bold retro / boxy 2000s, full Iosevka monospace  
 

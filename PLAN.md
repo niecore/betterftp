@@ -197,7 +197,7 @@ await controlPoint.write([
 ### Brand
 - **App name:** FTP.TEST
 - **Tagline:** POWER LAB
-- **Domain:** ftptests.icu
+- **Domain:** betterftp.cc
 - **Style:** Bold retro / boxy 2000s — chunky borders, monospace typography, color-coded sections
 
 ### Font
