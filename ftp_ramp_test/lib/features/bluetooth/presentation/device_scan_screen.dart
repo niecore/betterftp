@@ -433,8 +433,7 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen>
                 variant: AppButtonVariant.primary,
                 prefixIcon: '\u25B6',
                 onPressed: trainerConnected
-                    ? () => context.go('/ramp-test', extra: {
-                          'autoStart': true,
+                    ? () => context.go('/test-instructions', extra: {
                           'protocol': _selectedMode == '20 Min Test'
                               ? 'twentyMin'
                               : 'ramp',

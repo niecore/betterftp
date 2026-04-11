@@ -27,6 +27,14 @@ class TwentyMinProtocol extends TestProtocolDefinition {
   @override
   String get description => 'Sustain max effort for 20 min';
 
+  @override
+  List<String> get instructions => const [
+        'Warm up for 5 minutes at 100W. You can skip the warmup any time.',
+        'After warmup, sustain the highest power you can hold for a full 20 minutes.',
+        'Adjust the target with the +/– buttons — pace yourself so you can finish strong.',
+        'The test ends automatically at 20:00. Your FTP is 95% of your average power over that window.',
+      ];
+
   // ── Warmup ────────────────────────────────────────────────────────
 
   @override

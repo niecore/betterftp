@@ -17,6 +17,9 @@ abstract class TestProtocolDefinition {
   /// One-line description for the mode-selector.
   String get description;
 
+  /// Step-by-step instructions shown on the pre-test briefing screen.
+  List<String> get instructions;
+
   // ── Warmup ────────────────────────────────────────────────────────
 
   /// Pre-built warmup phase shared by all protocols.

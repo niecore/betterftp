@@ -29,6 +29,14 @@ class RampProtocol extends TestProtocolDefinition {
   @override
   String get description => 'Incremental power every minute';
 
+  @override
+  List<String> get instructions => const [
+        'Warm up for 5 minutes at 100W. You can skip the warmup any time.',
+        'After warmup, the target power starts at 100W and increases by 20W every minute.',
+        'Keep pedalling at 80–100 RPM and match the target as long as you can.',
+        'Press Stop when you can no longer hold the target — your FTP is 75% of your best 1-minute average.',
+      ];
+
   // ── Warmup ────────────────────────────────────────────────────────
 
   @override
