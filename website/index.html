@@ -111,6 +111,14 @@
   .btn-primary:hover { background: var(--yellow); border-color: var(--yellow-deep); color: var(--dark); }
   .btn-outline { background: transparent; color: var(--dark); }
   .btn-outline:hover { background: var(--yellow); border-color: var(--yellow-deep); }
+  .btn-icon {
+    background: transparent; color: var(--dark);
+    padding: 14px;
+    aspect-ratio: 1;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .btn-icon:hover { background: var(--yellow); border-color: var(--yellow-deep); }
+  .btn-icon svg { display: block; width: 24px; height: 24px; }
 
   /* HAMSTER CIRCLE */
   .hamster-circle { flex-shrink: 0; position: relative; }
@@ -274,21 +282,20 @@
   /* FOOTER */
   footer {
     border-top: 3px solid var(--dark);
-    padding: 40px 32px;
-    display: flex; justify-content: space-between; align-items: center;
     max-width: 1100px; margin: 0 auto;
+    padding: 24px 32px;
+    text-align: center;
   }
-  .footer-logo { font-weight: 900; font-size: 24px; color: var(--teal); letter-spacing: -1px; }
-  .footer-logo .dot { color: var(--pink); }
-  .footer-info { flex: 1; text-align: center; }
-  .footer-info p {
-    font-size: 11px; color: #888; line-height: 1.8;
+  .footer-line {
+    font-size: 12px; font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 0.3px;
   }
-  .footer-info a {
-    color: var(--teal); text-decoration: none; font-weight: 700;
+  .footer-line a {
+    color: var(--teal); text-decoration: none;
   }
-  .footer-info a:hover { text-decoration: underline; }
-  .footer-copy { font-size: 11px; color: var(--muted); }
+  .footer-line a:hover { color: var(--pink); }
+  .footer-sep { margin: 0 10px; opacity: 0.5; }
 
   /* RESPONSIVE */
   @media (max-width: 900px) {
@@ -305,7 +312,7 @@
     .promise-pill { font-size: 10px; padding: 6px 12px; }
     .promise-pill-icon { width: 24px; height: 24px; font-size: 12px; }
     nav { padding: 12px 16px; }
-    footer { flex-direction: column; gap: 16px; text-align: center; }
+    .footer-sep { display: block; height: 6px; visibility: hidden; margin: 0; }
     .hamster-circle-frame { width: 200px !important; height: 200px !important; }
     .timeline { grid-template-columns: 1fr; }
     .flow-title { font-size: 28px; }
@@ -331,6 +338,9 @@
       <div class="hero-buttons">
         <a href="#" class="btn btn-primary">Download for iOS</a>
         <a href="#" class="btn btn-outline">Get on Android</a>
+        <a href="https://github.com/niecore/betterftp" class="btn btn-icon" target="_blank" rel="noopener" aria-label="View source on GitHub" title="View source on GitHub">
+          <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+        </a>
       </div>
     </div>
 
@@ -623,17 +633,13 @@
 
 <!-- FOOTER -->
 <footer>
-  <div class="footer-logo">BETTER<span class="dot">.</span>FTP</div>
-  <div class="footer-info">
-    <p>
-      <strong>Privacy:</strong> This app collects no personal data. No analytics, no tracking, no accounts.
-      All workout data stays on your device unless you choose to export it.
-    </p>
-    <p style="margin-top:8px">
-      <strong>Contact:</strong> <a href="mailto:hello@betterftp.cc">hello@betterftp.cc</a>
-    </p>
+  <div class="footer-line">
+    &copy; 2026 betterftp.cc by Nico Müller
+    <span class="footer-sep">·</span>
+    <a href="https://github.com/niecore/betterftp" target="_blank" rel="noopener">GitHub</a>
+    <span class="footer-sep">·</span>
+    <a href="mailto:hello@betterftp.cc">hello@betterftp.cc</a>
   </div>
-  <div class="footer-copy">&copy; 2026 betterftp.cc</div>
 </footer>
 
 </body>
