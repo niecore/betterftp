@@ -22,12 +22,17 @@ class TestPhase {
   /// Whether this phase is a warmup (controls badge style + skip button).
   final bool isWarmup;
 
+  /// Whether the user can skip this phase (advance to the next phase/stage).
+  /// When true, the HUD renders a skip button below the progress bar.
+  final bool isSkippable;
+
   const TestPhase({
     required this.id,
     required this.displayName,
     this.isTestPhase = false,
     this.allowsManualPower = false,
     this.isWarmup = false,
+    this.isSkippable = false,
   });
 
   @override
@@ -56,21 +61,13 @@ class TestTickResult {
   /// If true the test is complete and [stop()] should be called.
   final bool shouldComplete;
 
-  /// Protocol-specific counters to merge into state
-  /// (e.g. `{'sustainedElapsed': 450}`).
-  final Map<String, int> counters;
-
   const TestTickResult({
     this.newPhase,
     this.newTargetPower,
     this.newStageIndex,
     this.shouldComplete = false,
-    this.counters = const {},
   });
 }
-
-/// Which progress widget the screen should show for a given phase.
-enum ProgressWidgetType { stepped, linear, none }
 
 /// A label+value pair shown in the results screen summary block.
 @immutable

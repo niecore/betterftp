@@ -35,6 +35,7 @@ class TwentyMinProtocol extends TestProtocolDefinition {
         displayName: 'Warmup',
         isWarmup: true,
         allowsManualPower: true,
+        isSkippable: true,
       );
 
   @override
@@ -51,18 +52,20 @@ class TwentyMinProtocol extends TestProtocolDefinition {
   @override
   int get initialTestPower => _startPower;
 
+  @override
+  int get stageDurationSeconds => _testDuration;
+
+  @override
+  int get totalStages => 1;
+
   // ── Tick logic ────────────────────────────────────────────────────
 
   @override
   TestTickResult onTick(TestRunState state) {
-    final sustained = (state.counters['sustainedElapsed'] ?? 0) + 1;
-    if (sustained >= _testDuration) {
-      return TestTickResult(
-        shouldComplete: true,
-        counters: {'sustainedElapsed': sustained},
-      );
+    if (state.stageElapsedSeconds + 1 >= _testDuration) {
+      return const TestTickResult(shouldComplete: true);
     }
-    return TestTickResult(counters: {'sustainedElapsed': sustained});
+    return const TestTickResult();
   }
 
   // ── FTP calculation ───────────────────────────────────────────────
@@ -83,17 +86,7 @@ class TwentyMinProtocol extends TestProtocolDefinition {
   }
 
   @override
-  ProgressWidgetType progressWidgetType(TestPhase phase) {
-    return ProgressWidgetType.linear;
-  }
-
-  @override
   List<ResultMetric> resultMetrics(TestRunState state) {
     return const [];
   }
-
-  // ── Helpers accessible to UI ──────────────────────────────────────
-
-  /// Total test duration (used by progress bar).
-  int get testDuration => _testDuration;
 }

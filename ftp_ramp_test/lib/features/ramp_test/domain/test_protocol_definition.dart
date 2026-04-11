@@ -36,6 +36,14 @@ abstract class TestProtocolDefinition {
   /// Target power when the test phase begins.
   int get initialTestPower;
 
+  /// Duration of one stage/interval in seconds. Used by the interval
+  /// countdown bar (60 for ramp stages, 1200 for a single 20-min block).
+  int get stageDurationSeconds;
+
+  /// Number of stages to render in the stepped progress footer.
+  /// For open-ended ramps this is an estimated display maximum.
+  int get totalStages;
+
   // ── Tick logic ────────────────────────────────────────────────────
 
   /// Called every second while the test is running (not during warmup).
@@ -55,9 +63,6 @@ abstract class TestProtocolDefinition {
 
   /// Header text for the HUD block (e.g. "Stage 3", "20 Min").
   String headerText(TestRunState state);
-
-  /// Which progress widget to show for the given phase.
-  ProgressWidgetType progressWidgetType(TestPhase phase);
 
   /// Extra result rows shown in the test summary block.
   ///

@@ -9,6 +9,7 @@ class RampProtocol extends TestProtocolDefinition {
   static const _startPower = 100;
   static const _increment = 20;
   static const _stageDuration = 60;
+  static const _displayStages = 15;
 
   static const _rampingPhase = TestPhase(
     id: 'ramping',
@@ -36,6 +37,7 @@ class RampProtocol extends TestProtocolDefinition {
         displayName: 'Warmup',
         isWarmup: true,
         allowsManualPower: true,
+        isSkippable: true,
       );
 
   @override
@@ -51,6 +53,12 @@ class RampProtocol extends TestProtocolDefinition {
 
   @override
   int get initialTestPower => _startPower;
+
+  @override
+  int get stageDurationSeconds => _stageDuration;
+
+  @override
+  int get totalStages => _displayStages;
 
   // ── Tick logic ────────────────────────────────────────────────────
 
@@ -84,11 +92,6 @@ class RampProtocol extends TestProtocolDefinition {
   String headerText(TestRunState state) {
     if (state.currentPhase.isWarmup) return 'Warmup';
     return 'Stage ${state.currentStage + 1}';
-  }
-
-  @override
-  ProgressWidgetType progressWidgetType(TestPhase phase) {
-    return ProgressWidgetType.stepped;
   }
 
   @override

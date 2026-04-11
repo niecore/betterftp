@@ -42,20 +42,40 @@ class BleScannerService {
   Stream<List<ScannedDevice>> scanForDevices() {
     final devices = <String, ScannedDevice>{};
     final controller = StreamController<List<ScannedDevice>>();
+    // `FlutterBluePlus.isScanning` is a re-emitting stream that immediately
+    // pushes its latest value (`false`) to every new subscriber. We must not
+    // treat that initial `false` as "scan stopped" — otherwise the controller
+    // closes before the scan even starts on the second and subsequent scans.
+    var sawScanning = false;
 
-    // Wait for adapter to be ready, then start scan
+    // Cancel any lingering subscriptions from a previous scan before we
+    // create new ones so we don't leak or cross-fire handlers.
+    _scanSubscription?.cancel();
+    _scanSubscription = null;
+    _isScanningSubscription?.cancel();
+    _isScanningSubscription = null;
+
+    // Wait for adapter to be ready, then start scan.
     () async {
       try {
         final adapterState = await FlutterBluePlus.adapterState
             .firstWhere((s) => s == BluetoothAdapterState.on)
             .timeout(const Duration(seconds: 5));
         if (adapterState != BluetoothAdapterState.on) return;
+        // If a previous scan is somehow still running (e.g. hot restart),
+        // stop it first so startScan doesn't race against the old one.
+        if (FlutterBluePlus.isScanningNow) {
+          await FlutterBluePlus.stopScan();
+        }
         await FlutterBluePlus.startScan(
           timeout: const Duration(seconds: 10),
         );
       } catch (e) {
         developer.log('Scan start error: $e', name: 'BleScannerService');
-        controller.addError(e);
+        if (!controller.isClosed) {
+          controller.addError(e);
+          await controller.close();
+        }
       }
     }();
 
@@ -92,14 +112,20 @@ class BleScannerService {
       }
     });
 
-    // Close the stream when scanning stops (timeout or manual stop)
-    _isScanningSubscription?.cancel();
+    // Close the stream when scanning stops (timeout or manual stop), but
+    // only after we've first seen it flip to `true`. This ignores the
+    // initial re-emitted `false` from the FBP behavior-subject stream.
     _isScanningSubscription = FlutterBluePlus.isScanning.listen((scanning) {
-      if (!scanning && !controller.isClosed) {
-        controller.close();
-        _isScanningSubscription?.cancel();
-        _isScanningSubscription = null;
+      if (scanning) {
+        sawScanning = true;
+        return;
       }
+      if (!sawScanning) return;
+      if (!controller.isClosed) {
+        controller.close();
+      }
+      _isScanningSubscription?.cancel();
+      _isScanningSubscription = null;
     });
 
     controller.onCancel = () {
@@ -118,6 +144,7 @@ class BleScannerService {
     _scanSubscription = null;
     _isScanningSubscription?.cancel();
     _isScanningSubscription = null;
+    if (!FlutterBluePlus.isScanningNow) return;
     try {
       await FlutterBluePlus.stopScan();
     } catch (_) {}

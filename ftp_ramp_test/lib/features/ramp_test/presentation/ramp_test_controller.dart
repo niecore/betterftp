@@ -38,7 +38,6 @@ class RampTestController extends Notifier<TestRunState> {
       warmupElapsedSeconds: 0,
       stageElapsedSeconds: 0,
       currentStage: 0,
-      counters: {},
       warmupDuration: _protocol.warmupDurationSeconds,
       readingsByPhase: {},
       bestOneMinAvgPower: 0,
@@ -162,16 +161,24 @@ class RampTestController extends Notifier<TestRunState> {
     _trainerRepository.setTargetPower(newPower);
   }
 
-  void skipWarmup() {
-    if (!state.currentPhase.isWarmup) return;
-    final targetPower = _protocol.initialTestPower;
-    _trainerRepository.setTargetPower(targetPower);
-    state = state.copyWith(
-      currentPhase: _protocol.initialTestPhase,
-      stageElapsedSeconds: 0,
-      currentStage: 0,
-      targetPower: targetPower,
-    );
+  /// Skip the current phase if it is marked skippable.
+  ///
+  /// Today this advances from the warmup phase straight into the protocol's
+  /// initial test phase. The controller stays generic — any phase marked
+  /// [TestPhase.isSkippable] can wire up its own advance logic here later.
+  void skipPhase() {
+    if (!state.currentPhase.isSkippable) return;
+
+    if (state.currentPhase.isWarmup) {
+      final targetPower = _protocol.initialTestPower;
+      _trainerRepository.setTargetPower(targetPower);
+      state = state.copyWith(
+        currentPhase: _protocol.initialTestPhase,
+        stageElapsedSeconds: 0,
+        currentStage: 0,
+        targetPower: targetPower,
+      );
+    }
   }
 
   void stop() {

@@ -33,9 +33,6 @@ class PowerReading {
 const _idlePhase = TestPhase(id: 'idle', displayName: 'Idle');
 
 /// Immutable state for the test session.
-///
-/// Protocol-specific counters live in [counters] so the state class
-/// doesn't need fields for every protocol variant.
 @immutable
 class TestRunState {
   // ── Lifecycle ─────────────────────────────────────────────────────
@@ -48,9 +45,6 @@ class TestRunState {
   final int warmupElapsedSeconds;
   final int stageElapsedSeconds;
   final int currentStage;
-
-  // ── Protocol-specific counters ────────────────────────────────────
-  final Map<String, int> counters;
 
   // ── Config (copied from protocol at start) ────────────────────────
   final int warmupDuration;
@@ -76,7 +70,6 @@ class TestRunState {
     this.warmupElapsedSeconds = 0,
     this.stageElapsedSeconds = 0,
     this.currentStage = 0,
-    this.counters = const {},
     this.warmupDuration = 300,
     this.targetPower = 0,
     this.currentPower = 0,
@@ -121,7 +114,6 @@ class TestRunState {
     int? warmupElapsedSeconds,
     int? stageElapsedSeconds,
     int? currentStage,
-    Map<String, int>? counters,
     int? warmupDuration,
     int? targetPower,
     int? currentPower,
@@ -140,7 +132,6 @@ class TestRunState {
       warmupElapsedSeconds: warmupElapsedSeconds ?? this.warmupElapsedSeconds,
       stageElapsedSeconds: stageElapsedSeconds ?? this.stageElapsedSeconds,
       currentStage: currentStage ?? this.currentStage,
-      counters: counters ?? this.counters,
       warmupDuration: warmupDuration ?? this.warmupDuration,
       targetPower: targetPower ?? this.targetPower,
       currentPower: currentPower ?? this.currentPower,
@@ -162,7 +153,6 @@ class TestRunState {
       currentStage: result.newStageIndex ?? currentStage,
       stageElapsedSeconds:
           result.newStageIndex != null ? 0 : stageElapsedSeconds + 1,
-      counters: {...counters, ...result.counters},
     );
   }
 }
