@@ -4,11 +4,9 @@
 
 ## Contents
 
-- `ftp_ramp_test/` — Flutter app (iOS + Android)
+- `betterftp/` — Flutter app (iOS + Android)
 - `website/` — Static landing page, deployed to Cloudflare Pages at [betterftp.cc](https://betterftp.cc)
 - `design/` — Design system, color schema, click dummy prototype
-- `PLAN.md` — Full implementation plan and architecture
-- `CLAUDE.md` — Context file for Claude Code sessions
 
 ## Stack
 

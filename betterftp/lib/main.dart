@@ -20,7 +20,7 @@ void main() async {
       overrides: [
         deviceStorageServiceProvider.overrideWithValue(deviceStorage),
       ],
-      child: const FtpRampTestApp(),
+      child: const BetterFtpApp(),
     ),
   );
 }

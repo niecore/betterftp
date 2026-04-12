@@ -1,5 +1,5 @@
-name: ftp_ramp_test
-description: "FTP.TEST — Power Lab. Cycling FTP ramp test app."
+name: betterftp
+description: "BetterFTP — Power Lab. Cycling FTP ramp test app."
 publish_to: 'none'
 
 version: 1.0.0+1

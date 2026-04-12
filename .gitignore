@@ -18,6 +18,10 @@ pubspec.lock
 .vscode/
 .claude/
 
+# Tools
+.ralph/
+.ralphrc
+
 # macOS
 .DS_Store
 *.xcworkspace

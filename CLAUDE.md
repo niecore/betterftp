@@ -1,4 +1,4 @@
-# FTP Ramp Test App - Claude Context File
+# BetterFTP App - Claude Context File
 
 This file provides context for Claude Code to understand the project and continue development across sessions.
 
@@ -56,7 +56,7 @@ This file provides context for Claude Code to understand the project and continu
 
 ## Project Structure
 
-See PLAN.md for full architecture. Key directories:
+Key directories:
 - `lib/features/bluetooth/` - FTMS device connection
 - `lib/features/ramp_test/` - Test logic and UI
 - `lib/features/results/` - FTP display and history
@@ -66,10 +66,9 @@ See PLAN.md for full architecture. Key directories:
 
 ## Current Status
 
-- Flutter project exists at `ftp_ramp_test/` with BLE/FTMS, ramp test logic, HUD UI, results + FIT export implemented
+- Flutter project exists at `betterftp/` with BLE/FTMS, ramp test logic, HUD UI, results + FIT export implemented
 - Website static landing page at `website/` (deployed to Cloudflare Pages, domain `betterftp.cc`)
 - Open: Hive result persistence, unit tests, hardware verification, Firebase App Distribution beta setup
-- Refer to PLAN.md Section 8 for implementation phases
 
 ## Development Setup
 
@@ -115,27 +114,23 @@ flutter doctor
 ## Commands
 
 ```bash
-# Create project
-flutter create ftp_ramp_test --org com.example
+# Run on device (from betterftp/ directory)
+cd betterftp && flutter run
 
-# Run on device
-flutter run
-
-# Run tests
-flutter test
+# Run tests (from betterftp/ directory)
+cd betterftp && flutter test
 ```
 
 ## Important Files to Read
 
 When resuming work:
-1. `PLAN.md` - Full implementation plan (includes design system in Section 6)
-2. `pubspec.yaml` - Dependencies (once created)
-3. `design/design-guideline.md` - Design specs, component rules, screen layouts
-4. `design/color-schema.md` - Color palette and usage rules
-5. `design/index.html` - Click dummy prototype (open in browser to preview)
-6. `lib/features/bluetooth/data/trainer_repository.dart` - FTMS integration
-7. `lib/features/ramp_test/presentation/ramp_test_controller.dart` - Test logic
-8. `lib/core/theme/app_colors.dart` - Color palette implementation
+1. `pubspec.yaml` - Dependencies
+2. `design/design-guideline.md` - Design specs, component rules, screen layouts
+3. `design/color-schema.md` - Color palette and usage rules
+4. `design/index.html` - Click dummy prototype (open in browser to preview)
+5. `lib/features/bluetooth/data/trainer_repository.dart` - FTMS integration
+6. `lib/features/ramp_test/presentation/ramp_test_controller.dart` - Test logic
+7. `lib/core/theme/app_colors.dart` - Color palette implementation
 
 ## User Context
 
