@@ -1,0 +1,13 @@
+{
+  "name": "ftms-simulator",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Minimal FTMS BLE trainer simulator for E2E testing",
+  "scripts": {
+    "sim": "node ftms_simulator.js",
+    "scenario": "node ftms_scenario.js"
+  },
+  "dependencies": {
+    "@stoprocent/bleno": "^0.7.0"
+  }
+}
