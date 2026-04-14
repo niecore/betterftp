@@ -56,6 +56,10 @@ class TestRunState {
   final int? currentHeartRate;
   final int? maxHeartRate;
 
+  // ── Connection health ────────────────────────────────────────────
+  final bool trainerDisconnected;
+  final bool dataStale;
+
   // ── Collected data ────────────────────────────────────────────────
   /// Power readings keyed by phase ID.
   final Map<String, List<PowerReading>> readingsByPhase;
@@ -76,6 +80,8 @@ class TestRunState {
     this.currentCadence = 0,
     this.currentHeartRate,
     this.maxHeartRate,
+    this.trainerDisconnected = false,
+    this.dataStale = false,
     this.readingsByPhase = const {},
     this.bestOneMinAvgPower = 0,
     this.calculatedFtp,
@@ -120,6 +126,8 @@ class TestRunState {
     int? currentCadence,
     int? currentHeartRate,
     int? maxHeartRate,
+    bool? trainerDisconnected,
+    bool? dataStale,
     Map<String, List<PowerReading>>? readingsByPhase,
     double? bestOneMinAvgPower,
     int? calculatedFtp,
@@ -138,6 +146,8 @@ class TestRunState {
       currentCadence: currentCadence ?? this.currentCadence,
       currentHeartRate: currentHeartRate ?? this.currentHeartRate,
       maxHeartRate: maxHeartRate ?? this.maxHeartRate,
+      trainerDisconnected: trainerDisconnected ?? this.trainerDisconnected,
+      dataStale: dataStale ?? this.dataStale,
       readingsByPhase: readingsByPhase ?? this.readingsByPhase,
       bestOneMinAvgPower: bestOneMinAvgPower ?? this.bestOneMinAvgPower,
       calculatedFtp: calculatedFtp ?? this.calculatedFtp,

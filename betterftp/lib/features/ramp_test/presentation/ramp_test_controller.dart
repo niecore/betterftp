@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../bluetooth/data/hr_repository.dart';
 import '../../bluetooth/data/trainer_repository.dart';
+import '../../bluetooth/domain/trainer.dart';
 import '../domain/ftp_calculator.dart';
 import '../domain/protocol_registry.dart';
 import '../domain/ramp_test_state.dart';
@@ -15,6 +17,8 @@ class RampTestController extends Notifier<TestRunState> {
   Timer? _timer;
   StreamSubscription? _dataSubscription;
   StreamSubscription? _hrSubscription;
+  StreamSubscription? _connectionSubscription;
+  StreamSubscription? _dataStaleSubscription;
   int? _latestHr;
 
   TrainerRepository get _trainerRepository =>
@@ -42,9 +46,11 @@ class RampTestController extends Notifier<TestRunState> {
       readingsByPhase: {},
       bestOneMinAvgPower: 0,
       calculatedFtp: null,
+      trainerDisconnected: false,
+      dataStale: false,
     );
 
-    _trainerRepository.setTargetPower(_protocol.warmupPower);
+    _sendTargetPower(_protocol.warmupPower);
 
     // Listen to HR data if connected
     _hrSubscription = _hrRepository.hrDataStream.listen((hrData) {
@@ -99,6 +105,27 @@ class RampTestController extends Notifier<TestRunState> {
       );
     });
 
+    // Monitor trainer connection state — surface to UI as a warning.
+    _connectionSubscription =
+        _trainerRepository.connectionStateStream.listen((connState) {
+      if (state.lifecycle != TestLifecycle.running) return;
+
+      final disconnected =
+          connState == TrainerConnectionState.disconnected;
+      if (state.trainerDisconnected != disconnected) {
+        state = state.copyWith(trainerDisconnected: disconnected);
+      }
+    });
+
+    // Monitor data staleness
+    _dataStaleSubscription =
+        _trainerRepository.dataStaleStream.listen((isStale) {
+      if (state.lifecycle != TestLifecycle.running) return;
+      if (state.dataStale != isStale) {
+        state = state.copyWith(dataStale: isStale);
+      }
+    });
+
     // Tick every second
     _timer = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
   }
@@ -121,7 +148,7 @@ class RampTestController extends Notifier<TestRunState> {
       if (newWarmup >= _protocol.warmupDurationSeconds) {
         // Transition to the protocol's initial test phase
         final targetPower = _protocol.initialTestPower;
-        _trainerRepository.setTargetPower(targetPower);
+        _sendTargetPower(targetPower);
         state = state.copyWith(
           elapsedSeconds: newElapsed,
           warmupElapsedSeconds: newWarmup,
@@ -150,7 +177,7 @@ class RampTestController extends Notifier<TestRunState> {
     state = state.applyTickResult(result, newElapsed);
 
     if (result.newTargetPower != null) {
-      _trainerRepository.setTargetPower(result.newTargetPower!);
+      _sendTargetPower(result.newTargetPower!);
     }
   }
 
@@ -158,7 +185,7 @@ class RampTestController extends Notifier<TestRunState> {
     if (!state.currentPhase.allowsManualPower) return;
     final newPower = (state.targetPower + delta).clamp(50, 500);
     state = state.copyWith(targetPower: newPower);
-    _trainerRepository.setTargetPower(newPower);
+    _sendTargetPower(newPower);
   }
 
   /// Skip the current phase if it is marked skippable.
@@ -171,7 +198,7 @@ class RampTestController extends Notifier<TestRunState> {
 
     if (state.currentPhase.isWarmup) {
       final targetPower = _protocol.initialTestPower;
-      _trainerRepository.setTargetPower(targetPower);
+      _sendTargetPower(targetPower);
       state = state.copyWith(
         currentPhase: _protocol.initialTestPhase,
         stageElapsedSeconds: 0,
@@ -188,13 +215,31 @@ class RampTestController extends Notifier<TestRunState> {
     _dataSubscription = null;
     _hrSubscription?.cancel();
     _hrSubscription = null;
+    _connectionSubscription?.cancel();
+    _connectionSubscription = null;
+    _dataStaleSubscription?.cancel();
+    _dataStaleSubscription = null;
 
     final ftp = _protocol.calculateFtp(state.readingsByPhase);
 
     state = state.copyWith(
       lifecycle: TestLifecycle.completed,
       calculatedFtp: ftp,
+      trainerDisconnected: false,
+      dataStale: false,
     );
+  }
+
+  /// Send a target power command to the trainer, handling failures.
+  void _sendTargetPower(int watts) {
+    _trainerRepository.setTargetPower(watts).then((success) {
+      if (!success && state.lifecycle == TestLifecycle.running) {
+        developer.log(
+          'Failed to set target power to ${watts}W',
+          name: 'RampTestController',
+        );
+      }
+    });
   }
 }
 
