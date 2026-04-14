@@ -29,6 +29,7 @@ dev_dependencies:
     sdk: flutter
 
   flutter_lints: ^6.0.0
+  patrol: ^4.5.0
 
 flutter:
   uses-material-design: true
@@ -47,3 +48,10 @@ flutter:
           weight: 700
         - asset: assets/fonts/Iosevka-Heavy.ttf
           weight: 900
+
+patrol:
+  app_name: BetterFTP
+  android:
+    package_name: com.example.ftpRampTest
+  ios:
+    bundle_id: com.example.ftpRampTest
