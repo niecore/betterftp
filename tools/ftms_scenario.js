@@ -1,10 +1,13 @@
 #!/usr/bin/env node
 
 /**
- * FTMS Scripted Scenario — Ramp Test Simulation
+ * FTMS ERG + HR Simulator — BetterFTP Sim
  *
- * Runs the FTMS simulator with a pre-defined power/cadence curve
- * that mimics a short ramp test (~55s). Used for automated E2E tests.
+ * Simulates an ERG-mode indoor trainer (FTMS 0x1826) AND a heart rate
+ * monitor (HR 0x180D) from a single BLE peripheral. Echoes back whatever
+ * target power the app sets (via FTMS Set Target Power) with ±5W jitter,
+ * at a steady cadence of 85 RPM. HR is derived from target power.
+ * Emits Indoor Bike Data and HR Measurement every second.
  *
  * Usage:
  *   cd tools && npm install   (one-time)
@@ -22,24 +25,19 @@ const CONTROL_POINT_UUID          = '2AD9';
 const FTMS_FEATURE_UUID           = '2ACC';
 const SUPPORTED_POWER_RANGE_UUID  = '2AD8';
 
-const DEVICE_NAME = 'BetterTrainerSimulator';
+// ── HR Service UUIDs ──────────────────────────────────────────────
+const HR_SERVICE_UUID             = '180D';
+const HR_MEASUREMENT_UUID         = '2A37';
 
-// ── Scenario Definition ───────────────────────────────────────────
-const SCENARIO = [
-  { name: 'Warmup',  durationMs: 10000, power: 100, cadence: 85 },
-  { name: 'Stage 1', durationMs: 10000, power: 120, cadence: 88 },
-  { name: 'Stage 2', durationMs: 10000, power: 140, cadence: 90 },
-  { name: 'Stage 3', durationMs: 10000, power: 160, cadence: 92 },
-  { name: 'Stage 4', durationMs: 10000, power: 180, cadence: 94 },
-  { name: 'Exhaust', durationMs: 5000,  power: 60,  cadence: 0  },
-];
+const DEVICE_NAME = 'BetterFTP Sim';
 
 // ── Mutable state ─────────────────────────────────────────────────
-let power = SCENARIO[0].power;
-let cadence = SCENARIO[0].cadence;
+let targetPower = 100;   // Updated by Set Target Power commands
+const CADENCE = 85;      // Steady RPM
 
 const bikeDataSubscribers = new Map();
 const controlPointSubscribers = new Map();
+const hrSubscribers = new Map();
 
 // ── Build Indoor Bike Data packet ─────────────────────────────────
 function buildIndoorBikeData(watts, rpm) {
@@ -58,6 +56,10 @@ function sendControlPointResponse(requestOpCode, resultCode) {
   }
 }
 
+function jitter(base) {
+  return base + Math.floor(Math.random() * 10) - 5; // ±5W
+}
+
 // ── Characteristics ───────────────────────────────────────────────
 const indoorBikeDataChar = new Characteristic({
   uuid: INDOOR_BIKE_DATA_UUID,
@@ -65,10 +67,12 @@ const indoorBikeDataChar = new Characteristic({
   onSubscribe: (maxValueSize, updateValueCallback) => {
     console.log(`[BLE] Subscribed to Indoor Bike Data (mtu=${maxValueSize})`);
     bikeDataSubscribers.set('bike', updateValueCallback);
-    // Start the scenario once the central is ready to receive data
-    setTimeout(() => startScenario(), 500);
+    startEmitting();
   },
-  onUnsubscribe: () => { bikeDataSubscribers.delete('bike'); },
+  onUnsubscribe: () => {
+    bikeDataSubscribers.delete('bike');
+    stopEmitting();
+  },
 });
 
 const ftmsFeatureChar = new Characteristic({
@@ -116,12 +120,17 @@ const controlPointChar = new Characteristic({
         break;
       case 0x05:
         if (data.length >= 3) {
-          const tp = data.readInt16LE(1);
-          console.log(`[FTMS] Target power: ${tp}W`);
+          targetPower = data.readInt16LE(1);
+          console.log(`[FTMS] Target power set: ${targetPower}W`);
           sendControlPointResponse(0x05, 0x01);
         }
         break;
+      case 0x07:
+        console.log('[FTMS] Start/Resume');
+        sendControlPointResponse(0x07, 0x01);
+        break;
       default:
+        console.log(`[FTMS] Unknown opcode: 0x${opCode.toString(16)}`);
         sendControlPointResponse(opCode, 0x02);
     }
     callback(Characteristic.RESULT_SUCCESS);
@@ -133,13 +142,29 @@ const ftmsService = new PrimaryService({
   characteristics: [ftmsFeatureChar, indoorBikeDataChar, controlPointChar, supportedPowerRangeChar],
 });
 
-// ── BLE lifecycle ─────────────────────────────────────────────────
-let scenarioStarted = false;
+// ── HR Measurement Characteristic ────────────────────────────────
+const hrMeasurementChar = new Characteristic({
+  uuid: HR_MEASUREMENT_UUID,
+  properties: ['notify'],
+  onSubscribe: (maxValueSize, updateValueCallback) => {
+    console.log(`[BLE] Subscribed to HR Measurement (mtu=${maxValueSize})`);
+    hrSubscribers.set('hr', updateValueCallback);
+  },
+  onUnsubscribe: () => {
+    hrSubscribers.delete('hr');
+  },
+});
 
+const hrService = new PrimaryService({
+  uuid: HR_SERVICE_UUID,
+  characteristics: [hrMeasurementChar],
+});
+
+// ── BLE lifecycle ─────────────────────────────────────────────────
 bleno.on('stateChange', (state) => {
   console.log(`[BLE] Adapter state: ${state}`);
   if (state === 'poweredOn') {
-    bleno.startAdvertising(DEVICE_NAME, [FTMS_SERVICE_UUID], (err) => {
+    bleno.startAdvertising(DEVICE_NAME, [FTMS_SERVICE_UUID, HR_SERVICE_UUID], (err) => {
       if (err) console.error('[BLE] Advertising error:', err);
     });
   } else {
@@ -149,11 +174,11 @@ bleno.on('stateChange', (state) => {
 
 bleno.on('advertisingStart', (err) => {
   if (err) { console.error('[BLE] Advertising failed:', err); return; }
-  console.log(`[BLE] Advertising as "${DEVICE_NAME}" (FTMS 0x1826)`);
-  bleno.setServices([ftmsService], (err) => {
+  console.log(`[BLE] Advertising as "${DEVICE_NAME}" (FTMS 0x1826 + HR 0x180D)`);
+  bleno.setServices([ftmsService, hrService], (err) => {
     if (err) { console.error('[BLE] Set services error:', err); return; }
-    console.log('[BLE] FTMS service registered');
-    console.log('[Scenario] Waiting for central to connect...\n');
+    console.log('[BLE] FTMS + HR services registered');
+    console.log('[Simulator] Waiting for central to connect...\n');
   });
 });
 
@@ -163,85 +188,54 @@ bleno.on('accept', (address) => {
 
 bleno.on('disconnect', (address) => {
   console.log(`[BLE] Central disconnected: ${address}`);
+  stopEmitting();
 });
 
-// ── Scenario Runner ───────────────────────────────────────────────
-let phaseIndex = 0;
-let phaseStartTime = 0;
-let scenarioTimer = null;
+// ── Data emitter ─────────────────────────────────────────────────
+let emitTimer = null;
 
-function jitter(base) {
-  return base + Math.floor(Math.random() * 10) - 5; // ±5W
-}
-
-function tick() {
-  const phase = SCENARIO[phaseIndex];
-  if (!phase) {
-    console.log('\n[Scenario] All phases complete. Waiting for next connection...');
-    scenarioStarted = false;
-    return;
-  }
-
-  const elapsed = Date.now() - phaseStartTime;
-
-  // Advance to next phase?
-  if (elapsed >= phase.durationMs) {
-    phaseIndex++;
-    phaseStartTime = Date.now();
-    const next = SCENARIO[phaseIndex];
-    if (next) {
-      power = next.power;
-      cadence = next.cadence;
-      console.log(`\n[Scenario] >> ${next.name}: ${next.power}W @ ${next.cadence} RPM (${next.durationMs / 1000}s)`);
+function startEmitting() {
+  if (emitTimer) return;
+  console.log('[Simulator] Emitting Indoor Bike Data + HR every 1s');
+  emitTimer = setInterval(() => {
+    const w = jitter(targetPower);
+    const rpm = jitter(CADENCE);
+    const buf = buildIndoorBikeData(w, rpm);
+    for (const cb of bikeDataSubscribers.values()) {
+      cb(buf);
     }
-    scenarioTimer = setTimeout(tick, 1000);
-    return;
-  }
 
-  // Emit data
-  const w = cadence > 0 ? jitter(power) : power;
-  const buf = buildIndoorBikeData(w, cadence);
-  for (const cb of bikeDataSubscribers.values()) {
-    cb(buf);
-  }
+    // Stagger HR notification by 500ms to avoid BLE transmit queue
+    // overflow — back-to-back updateValue calls drop the second one.
+    const baseHr = 70 + Math.floor(targetPower / 5);
+    const hr = Math.min(200, Math.max(50, baseHr + Math.floor(Math.random() * 10) - 5));
+    setTimeout(() => {
+      const hrBuf = Buffer.from([0x00, hr]);
+      for (const cb of hrSubscribers.values()) {
+        cb(hrBuf);
+      }
+    }, 500);
 
-  const remaining = Math.ceil((phase.durationMs - elapsed) / 1000);
-  process.stdout.write(
-    `\r[${phase.name}] ${w}W @ ${cadence} RPM — ${remaining}s left   `
-  );
-
-  scenarioTimer = setTimeout(tick, 1000);
+    process.stdout.write(`\r[ERG] ${w}W (target: ${targetPower}W) @ ${rpm} RPM | HR ${hr} BPM   `);
+  }, 1000);
 }
 
-function startScenario() {
-  if (scenarioStarted) return;
-  scenarioStarted = true;
-
-  // Reset state for a fresh run
-  phaseIndex = 0;
-  power = SCENARIO[0].power;
-  cadence = SCENARIO[0].cadence;
-  if (scenarioTimer) clearTimeout(scenarioTimer);
-
-  console.log(`[Scenario] Starting (${SCENARIO.length} phases):`);
-  SCENARIO.forEach((p, i) => {
-    console.log(`  ${i + 1}. ${p.name}: ${p.power}W @ ${p.cadence} RPM for ${p.durationMs / 1000}s`);
-  });
-
-  const first = SCENARIO[0];
-  console.log(`\n[Scenario] >> ${first.name}: ${first.power}W @ ${first.cadence} RPM (${first.durationMs / 1000}s)`);
-  phaseStartTime = Date.now();
-  tick();
+function stopEmitting() {
+  if (emitTimer) {
+    clearInterval(emitTimer);
+    emitTimer = null;
+    console.log('\n[Simulator] Stopped emitting data');
+  }
 }
 
 // ── Startup ───────────────────────────────────────────────────────
-console.log(`[Scenario] FTMS Trainer "${DEVICE_NAME}" — Scripted Ramp Test`);
-console.log('[Scenario] Waiting for Bluetooth adapter...\n');
+console.log(`[Simulator] FTMS ERG Trainer + HR Monitor "${DEVICE_NAME}"`);
+console.log('[Simulator] Waiting for Bluetooth adapter...\n');
 
 // ── Graceful shutdown ─────────────────────────────────────────────
 function shutdown() {
-  console.log('\n[Scenario] Shutting down...');
-  if (scenarioTimer) clearTimeout(scenarioTimer);
+  console.log('\n[Simulator] Shutting down...');
+  stopEmitting();
   bleno.stopAdvertising();
   process.exit(0);
 }
