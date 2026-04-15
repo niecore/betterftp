@@ -59,7 +59,7 @@ class HrRepository {
 
       await device.connect(
         license: License.free,
-        timeout: const Duration(seconds: 15),
+        timeout: const Duration(seconds: 5),
       );
 
       // Listen for unexpected disconnects
