@@ -22,7 +22,7 @@ const CONTROL_POINT_UUID          = '2AD9';
 const FTMS_FEATURE_UUID           = '2ACC';
 const SUPPORTED_POWER_RANGE_UUID  = '2AD8';
 
-const DEVICE_NAME = 'Zwack';
+const DEVICE_NAME = 'BetterTrainerSimulator';
 
 // ── Scenario Definition ───────────────────────────────────────────
 const SCENARIO = [
@@ -62,17 +62,19 @@ function sendControlPointResponse(requestOpCode, resultCode) {
 const indoorBikeDataChar = new Characteristic({
   uuid: INDOOR_BIKE_DATA_UUID,
   properties: ['notify'],
-  onSubscribe: (handle, maxValueSize, cb) => {
-    console.log(`[BLE] Subscribed to Indoor Bike Data (handle=${handle})`);
-    bikeDataSubscribers.set(handle, cb);
+  onSubscribe: (maxValueSize, updateValueCallback) => {
+    console.log(`[BLE] Subscribed to Indoor Bike Data (mtu=${maxValueSize})`);
+    bikeDataSubscribers.set('bike', updateValueCallback);
+    // Start the scenario once the central is ready to receive data
+    setTimeout(() => startScenario(), 500);
   },
-  onUnsubscribe: (handle) => { bikeDataSubscribers.delete(handle); },
+  onUnsubscribe: () => { bikeDataSubscribers.delete('bike'); },
 });
 
 const ftmsFeatureChar = new Characteristic({
   uuid: FTMS_FEATURE_UUID,
   properties: ['read'],
-  onReadRequest: (handle, offset, callback) => {
+  onReadRequest: (offset, callback) => {
     const buf = Buffer.alloc(8, 0);
     buf.writeUInt32LE(0x44, 0); // cadence + power
     buf.writeUInt32LE(0x02, 4); // target power
@@ -83,7 +85,7 @@ const ftmsFeatureChar = new Characteristic({
 const supportedPowerRangeChar = new Characteristic({
   uuid: SUPPORTED_POWER_RANGE_UUID,
   properties: ['read'],
-  onReadRequest: (handle, offset, callback) => {
+  onReadRequest: (offset, callback) => {
     const buf = Buffer.alloc(6);
     buf.writeInt16LE(0, 0);
     buf.writeInt16LE(2000, 2);
@@ -95,12 +97,12 @@ const supportedPowerRangeChar = new Characteristic({
 const controlPointChar = new Characteristic({
   uuid: CONTROL_POINT_UUID,
   properties: ['write', 'indicate'],
-  onSubscribe: (handle, maxValueSize, cb) => {
-    console.log(`[BLE] Subscribed to Control Point (handle=${handle})`);
-    controlPointSubscribers.set(handle, cb);
+  onSubscribe: (maxValueSize, updateValueCallback) => {
+    console.log(`[BLE] Subscribed to Control Point (mtu=${maxValueSize})`);
+    controlPointSubscribers.set('cp', updateValueCallback);
   },
-  onUnsubscribe: (handle) => { controlPointSubscribers.delete(handle); },
-  onWriteRequest: (handle, data, offset, withoutResponse, callback) => {
+  onUnsubscribe: () => { controlPointSubscribers.delete('cp'); },
+  onWriteRequest: (data, offset, withoutResponse, callback) => {
     if (data.length < 1) { callback(Characteristic.RESULT_UNLIKELY_ERROR); return; }
     const opCode = data[0];
     switch (opCode) {
@@ -151,9 +153,7 @@ bleno.on('advertisingStart', (err) => {
   bleno.setServices([ftmsService], (err) => {
     if (err) { console.error('[BLE] Set services error:', err); return; }
     console.log('[BLE] FTMS service registered');
-    console.log('[Scenario] Waiting for central to connect and subscribe...\n');
-    // Start emitting data immediately so centrals get data as soon as they subscribe
-    startScenario();
+    console.log('[Scenario] Waiting for central to connect...\n');
   });
 });
 
@@ -177,11 +177,8 @@ function jitter(base) {
 function tick() {
   const phase = SCENARIO[phaseIndex];
   if (!phase) {
-    console.log('\n[Scenario] All phases complete. Shutting down in 3s...');
-    setTimeout(() => {
-      bleno.stopAdvertising();
-      process.exit(0);
-    }, 3000);
+    console.log('\n[Scenario] All phases complete. Waiting for next connection...');
+    scenarioStarted = false;
     return;
   }
 
@@ -219,6 +216,12 @@ function tick() {
 function startScenario() {
   if (scenarioStarted) return;
   scenarioStarted = true;
+
+  // Reset state for a fresh run
+  phaseIndex = 0;
+  power = SCENARIO[0].power;
+  cadence = SCENARIO[0].cadence;
+  if (scenarioTimer) clearTimeout(scenarioTimer);
 
   console.log(`[Scenario] Starting (${SCENARIO.length} phases):`);
   SCENARIO.forEach((p, i) => {
