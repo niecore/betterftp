@@ -66,21 +66,21 @@ class FitExportService {
   }
 
   void _writeRecords(Encode encoder, List<PowerReading> readings) {
-    bool definitionWritten = false;
+    if (readings.isEmpty) return;
+
+    // Build definition from a template with all fields so every record
+    // has a consistent structure. Missing HR uses 0xFF (FIT invalid).
+    final template = Mesg.fromMesgNum(MesgNum.record);
+    template.setFieldValue(253, 0); // timestamp
+    template.setFieldValue(7, 0); // power
+    template.setFieldValue(3, 0); // heart_rate
+    encoder.writeMesgDefinition(MesgDefinition.fromMesg(template));
 
     for (final reading in readings) {
       final mesg = Mesg.fromMesgNum(MesgNum.record);
       mesg.setFieldValue(253, _toFitTimestamp(reading.timestamp)); // timestamp
       mesg.setFieldValue(7, reading.power); // power (watts)
-      if (reading.heartRate != null) {
-        mesg.setFieldValue(3, reading.heartRate!); // heart_rate (bpm)
-      }
-
-      if (!definitionWritten) {
-        final def = MesgDefinition.fromMesg(mesg);
-        encoder.writeMesgDefinition(def);
-        definitionWritten = true;
-      }
+      mesg.setFieldValue(3, reading.heartRate ?? 0xFF); // heart_rate (bpm)
       encoder.writeMesg(mesg);
     }
   }
@@ -97,8 +97,8 @@ class FitExportService {
     mesg.setFieldValue(0, 9); // event = lap
     mesg.setFieldValue(1, 1); // event_type = stop
     mesg.setFieldValue(2, fitStart); // start_time
-    mesg.setFieldValue(7, (totalElapsed * 1000).round()); // total_elapsed_time
-    mesg.setFieldValue(8, (totalElapsed * 1000).round()); // total_timer_time
+    mesg.setFieldValue(7, totalElapsed); // total_elapsed_time (seconds)
+    mesg.setFieldValue(8, totalElapsed); // total_timer_time (seconds)
 
     final def = MesgDefinition.fromMesg(mesg);
     encoder.writeMesgDefinition(def);
@@ -119,8 +119,8 @@ class FitExportService {
     mesg.setFieldValue(2, fitStart); // start_time
     mesg.setFieldValue(5, 2); // sport = cycling
     mesg.setFieldValue(6, 6); // sub_sport = indoor_cycling
-    mesg.setFieldValue(7, (totalElapsed * 1000).round()); // total_elapsed_time
-    mesg.setFieldValue(8, (totalElapsed * 1000).round()); // total_timer_time
+    mesg.setFieldValue(7, totalElapsed); // total_elapsed_time (seconds)
+    mesg.setFieldValue(8, totalElapsed); // total_timer_time (seconds)
 
     // Power stats (time-weighted)
     final avgPower =
@@ -145,7 +145,7 @@ class FitExportService {
   void _writeActivity(Encode encoder, int fitEnd, double totalElapsed) {
     final mesg = Mesg.fromMesgNum(MesgNum.activity);
     mesg.setFieldValue(253, fitEnd); // timestamp
-    mesg.setFieldValue(0, (totalElapsed * 1000).round()); // total_timer_time
+    mesg.setFieldValue(0, totalElapsed); // total_timer_time (seconds)
     mesg.setFieldValue(1, 1); // num_sessions
     mesg.setFieldValue(3, 26); // event = activity
     mesg.setFieldValue(4, 1); // event_type = stop
