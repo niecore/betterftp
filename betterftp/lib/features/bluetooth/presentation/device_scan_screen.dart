@@ -813,7 +813,7 @@ class _DeviceScanSheetState extends State<_DeviceScanSheet> {
   Widget build(BuildContext context) {
     final relevantDevices = widget.forHr
         ? _devices
-            .where((d) => widget.isHrMonitor(d) && !widget.isTrainer(d))
+            .where((d) => widget.isHrMonitor(d))
             .toList()
         : _devices.where(widget.isTrainer).toList();
 
