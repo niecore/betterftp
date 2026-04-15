@@ -98,9 +98,15 @@ class BleScannerService {
         );
 
         _discoveredDevices[id] = device;
+        // Prefer the advertisement local name (advName) over platformName.
+        // On macOS peripherals, platformName is the system hostname, while
+        // advName is the name set by the BLE device in its advertisement.
+        final displayName = ad.advName.isNotEmpty
+            ? ad.advName
+            : device.platformName;
         devices[id] = ScannedDevice(
           id: id,
-          name: device.platformName,
+          name: displayName,
           serviceUuids: ad.serviceUuids
               .map((u) => u.str.toLowerCase())
               .toList(),
