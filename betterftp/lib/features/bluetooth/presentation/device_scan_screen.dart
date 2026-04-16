@@ -20,6 +20,7 @@ import '../data/hr_repository.dart';
 import '../data/trainer_repository.dart';
 import '../domain/hr_monitor.dart';
 import '../domain/trainer.dart';
+import 'settings_bottom_sheet.dart';
 
 class DeviceScanScreen extends ConsumerStatefulWidget {
   const DeviceScanScreen({super.key});
@@ -220,6 +221,17 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen>
     ).whenComplete(() => scannerService.stopScan());
   }
 
+  void _showSettingsSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.bg,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => const SettingsBottomSheet(),
+    );
+  }
+
   void _showModeSelector() {
     final modes = [
       ('Ramp Test', 'Incremental power every minute'),
@@ -407,6 +419,28 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Align(
+                alignment: Alignment.centerRight,
+                child: GestureDetector(
+                  onTap: _showSettingsSheet,
+                  behavior: HitTestBehavior.opaque,
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: AppColors.card,
+                      border: Border.all(color: AppColors.dark, width: 2.5),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    alignment: Alignment.center,
+                    child: const Text(
+                      '\u2699',
+                      style: TextStyle(fontSize: 18),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
               _buildLogo(),
               const SizedBox(height: 22),
               _buildModeSelector(),
