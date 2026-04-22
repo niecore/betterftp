@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -14,13 +15,13 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/icon_box.dart';
 import '../../../shared/widgets/tag_widget.dart';
+import '../data/ble_debug_logger.dart';
 import '../data/ble_scanner_service.dart';
 import '../data/device_storage_service.dart';
 import '../data/hr_repository.dart';
 import '../data/trainer_repository.dart';
 import '../domain/hr_monitor.dart';
 import '../domain/trainer.dart';
-import 'settings_bottom_sheet.dart';
 
 class DeviceScanScreen extends ConsumerStatefulWidget {
   const DeviceScanScreen({super.key});
@@ -31,10 +32,21 @@ class DeviceScanScreen extends ConsumerStatefulWidget {
 
 class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen>
     with SingleTickerProviderStateMixin {
+  /// Hidden debug-log share — tap the hamster badge 7× within
+  /// [_logoTapResetWindow] to fire `shareLog()` directly. No visible UI.
+  /// Mirrors Android's "tap the build number to enable developer mode".
+  static const int _logoTapsToShare = 7;
+  static const int _logoTapsForHaptic = 5;
+  static const Duration _logoTapResetWindow = Duration(seconds: 3);
+
   String _selectedMode = 'Ramp Test';
   late final VideoPlayerController _hamsterController;
   late final AnimationController _shakeController;
   late final Animation<double> _shakeAnimation;
+
+  int _logoTapCount = 0;
+  Timer? _logoTapResetTimer;
+  bool _isSharingLog = false;
   @override
   void initState() {
     super.initState();
@@ -110,6 +122,7 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen>
   void dispose() {
     _hamsterController.dispose();
     _shakeController.dispose();
+    _logoTapResetTimer?.cancel();
     super.dispose();
   }
 
@@ -221,15 +234,47 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen>
     ).whenComplete(() => scannerService.stopScan());
   }
 
-  void _showSettingsSheet() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.bg,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => const SettingsBottomSheet(),
-    );
+  /// Tap handler for the hamster badge. Silently counts taps; on the
+  /// [_logoTapsToShare]th tap within [_logoTapResetWindow], fires the
+  /// native share sheet with the BLE debug log attached. Gives a soft
+  /// haptic tick from [_logoTapsForHaptic] so beta testers in-the-know
+  /// feel progress without any visible UI change.
+  void _onLogoTap() {
+    if (_isSharingLog) return;
+
+    _logoTapResetTimer?.cancel();
+    _logoTapCount++;
+
+    if (_logoTapCount >= _logoTapsToShare) {
+      _logoTapCount = 0;
+      HapticFeedback.mediumImpact();
+      _shareDebugLog();
+      return;
+    }
+
+    if (_logoTapCount >= _logoTapsForHaptic) {
+      HapticFeedback.selectionClick();
+    }
+
+    _logoTapResetTimer = Timer(_logoTapResetWindow, () {
+      _logoTapCount = 0;
+    });
+  }
+
+  /// Fire the native share sheet with the BLE debug log attached.
+  Future<void> _shareDebugLog() async {
+    if (_isSharingLog) return;
+    setState(() => _isSharingLog = true);
+    try {
+      await ref.read(bleDebugLoggerProvider).shareLog();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to share log: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isSharingLog = false);
+    }
   }
 
   void _showModeSelector() {
@@ -419,28 +464,6 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Align(
-                alignment: Alignment.centerRight,
-                child: GestureDetector(
-                  onTap: _showSettingsSheet,
-                  behavior: HitTestBehavior.opaque,
-                  child: Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: AppColors.card,
-                      border: Border.all(color: AppColors.dark, width: 2.5),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    alignment: Alignment.center,
-                    child: const Text(
-                      '\u2699',
-                      style: TextStyle(fontSize: 18),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
               _buildLogo(),
               const SizedBox(height: 22),
               _buildModeSelector(),
@@ -487,45 +510,49 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen>
     return Center(
       child: Column(
         children: [
-          // Circle video badge
-          Container(
-            width: badgeSize,
-            height: badgeSize,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.bg,
-              border: Border.all(color: AppColors.dark, width: 4),
-              boxShadow: const [
-                BoxShadow(
-                  color: AppColors.dark,
-                  offset: Offset(4, 4),
+          // Circle video badge (also the hidden debug-log share: 7 taps)
+          GestureDetector(
+            onTap: _onLogoTap,
+            behavior: HitTestBehavior.opaque,
+            child: Container(
+              width: badgeSize,
+              height: badgeSize,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.bg,
+                border: Border.all(color: AppColors.dark, width: 4),
+                boxShadow: const [
+                  BoxShadow(
+                    color: AppColors.dark,
+                    offset: Offset(4, 4),
+                  ),
+                ],
+              ),
+              child: ClipOval(
+                child: Padding(
+                  padding: const EdgeInsets.only(
+                    top: 0,
+                    bottom: 16,
+                    left: 32,
+                    right: 32,
+                  ),
+                  child: _hamsterController.value.isInitialized
+                      ? ColorFiltered(
+                          colorFilter: const ColorFilter.mode(
+                            AppColors.bg,
+                            BlendMode.multiply,
+                          ),
+                          child: FittedBox(
+                            fit: BoxFit.cover,
+                            child: SizedBox(
+                              width: _hamsterController.value.size.width,
+                              height: _hamsterController.value.size.height,
+                              child: VideoPlayer(_hamsterController),
+                            ),
+                          ),
+                        )
+                      : const SizedBox.shrink(),
                 ),
-              ],
-            ),
-            child: ClipOval(
-              child: Padding(
-                padding: const EdgeInsets.only(
-                  top: 0,
-                  bottom: 16,
-                  left: 32,
-                  right: 32,
-                ),
-                child: _hamsterController.value.isInitialized
-                  ? ColorFiltered(
-                      colorFilter: const ColorFilter.mode(
-                        AppColors.bg,
-                        BlendMode.multiply,
-                      ),
-                      child: FittedBox(
-                        fit: BoxFit.cover,
-                        child: SizedBox(
-                          width: _hamsterController.value.size.width,
-                          height: _hamsterController.value.size.height,
-                          child: VideoPlayer(_hamsterController),
-                        ),
-                      ),
-                    )
-                  : const SizedBox.shrink(),
               ),
             ),
           ),
