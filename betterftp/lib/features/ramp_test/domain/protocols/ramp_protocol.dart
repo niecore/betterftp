@@ -31,10 +31,10 @@ class RampProtocol extends TestProtocolDefinition {
 
   @override
   List<String> get instructions => const [
-        'Warm up for 5 minutes at 100W. You can skip the warmup any time.',
-        'After warmup, the target power starts at 100W and increases by 20W every minute.',
-        'Keep pedalling at 80–100 RPM and match the target as long as you can.',
-        'Press Stop when you can no longer hold the target — your FTP is 75% of your best 1-minute average.',
+        'Warm up 10 min. Throw in a few fast spin-ups to wake the legs.',
+        'Power steps up 20W every minute. Stay seated, cadence 85–95.',
+        'When the legs scream, give one more stage. That\'s where your FTP hides.',
+        'FTP = 75% of your best minute. Cool down 5 min easy.',
       ];
 
   // ── Warmup ────────────────────────────────────────────────────────
@@ -49,7 +49,7 @@ class RampProtocol extends TestProtocolDefinition {
       );
 
   @override
-  int get warmupDurationSeconds => 300;
+  int get warmupDurationSeconds => 600;
 
   @override
   int get warmupPower => 100;

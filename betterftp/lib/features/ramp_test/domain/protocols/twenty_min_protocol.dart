@@ -29,10 +29,11 @@ class TwentyMinProtocol extends TestProtocolDefinition {
 
   @override
   List<String> get instructions => const [
-        'Warm up for 5 minutes at 100W. You can skip the warmup any time.',
-        'After warmup, sustain the highest power you can hold for a full 20 minutes.',
-        'Adjust the target with the +/– buttons — pace yourself so you can finish strong.',
-        'The test ends automatically at 20:00. Your FTP is 95% of your average power over that window.',
+        'Warm up 15 min. Throw in a few fast spin-ups to wake the legs.',
+        'Pick a target you\'re sure you can hold for 20 min. Better to finish strong than blow up at minute 10.',
+        'Last 5 minutes: fight to hold the pace. If anything\'s left, push harder.',
+        'Stay seated, cadence 85–95.',
+        'Test ends at 20:00. FTP = 95% of your average. Cool down 5 min easy.',
       ];
 
   // ── Warmup ────────────────────────────────────────────────────────
@@ -47,7 +48,7 @@ class TwentyMinProtocol extends TestProtocolDefinition {
       );
 
   @override
-  int get warmupDurationSeconds => 300;
+  int get warmupDurationSeconds => 900;
 
   @override
   int get warmupPower => 100;
