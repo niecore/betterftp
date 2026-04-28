@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Privacy Policy — BetterFTP</title>
+<meta name="description" content="BetterFTP privacy policy. No accounts, no servers, no data collection.">
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<style>
+  @import url('https://cdn.jsdelivr.net/fontsource/fonts/iosevka@latest/latin-400-normal.min.css');
+  @import url('https://cdn.jsdelivr.net/fontsource/fonts/iosevka@latest/latin-700-normal.min.css');
+  @import url('https://cdn.jsdelivr.net/fontsource/fonts/iosevka@latest/latin-900-normal.min.css');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --teal: #0D9488;
+    --pink: #EC4899;
+    --yellow: #FACC15;
+    --yellow-deep: #EAB308;
+    --dark: #1a1a1a;
+    --bg: #F5F5F0;
+    --card: #FFFFFF;
+    --muted: #AAAAAA;
+  }
+
+  body {
+    font-family: 'Iosevka', monospace;
+    background: var(--bg);
+    color: var(--dark);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: var(--dark);
+    border-bottom: 3px solid var(--dark);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 32px;
+  }
+  .nav-logo {
+    font-weight: 900; font-size: 18px;
+    color: var(--teal); letter-spacing: -1px;
+    text-decoration: none;
+  }
+  .nav-logo .dot { color: var(--pink); }
+  .nav-cta {
+    background: var(--teal); color: #fff; border: 2px solid var(--teal);
+    padding: 8px 20px; border-radius: 10px;
+    font-family: 'Iosevka', monospace;
+    font-weight: 700; font-size: 12px; letter-spacing: 1px;
+    text-transform: uppercase; transition: all 0.2s; text-decoration: none;
+  }
+  .nav-cta:hover { background: var(--yellow); border-color: var(--yellow-deep); color: var(--dark); }
+  .page-color-bar {
+    position: fixed; top: 51px; left: 0; right: 0; height: 4px; z-index: 99;
+    background: linear-gradient(90deg, var(--teal) 0%, var(--teal) 60%, var(--pink) 60%, var(--pink) 85%, var(--yellow) 85%, var(--yellow) 100%);
+  }
+
+  .page {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 96px 32px 48px;
+  }
+
+  h1 {
+    font-size: 40px; font-weight: 900; letter-spacing: -2px;
+    line-height: 1.05; margin-bottom: 6px;
+  }
+  .effective {
+    font-size: 11px; font-weight: 700; letter-spacing: 2px;
+    color: var(--muted); text-transform: uppercase;
+    margin-bottom: 28px;
+  }
+
+  .block {
+    border: 3px solid var(--dark);
+    border-radius: 14px;
+    background: var(--card);
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .block-header {
+    padding: 10px 16px;
+    font-size: 11px; font-weight: 900; letter-spacing: 2px;
+    text-transform: uppercase; color: #fff;
+    border-bottom: 3px solid var(--dark);
+  }
+  .block-header.teal { background: var(--teal); }
+  .block-header.dark { background: var(--dark); }
+  .block-body { padding: 18px 20px; }
+
+  p {
+    font-size: 14px; font-weight: 400; line-height: 1.65;
+    color: #333;
+    margin-bottom: 12px;
+  }
+  p:last-child { margin-bottom: 0; }
+  strong { font-weight: 900; color: var(--dark); }
+  a.inline { color: var(--teal); font-weight: 700; text-decoration: none; border-bottom: 2px solid var(--teal); }
+  a.inline:hover { color: var(--pink); border-bottom-color: var(--pink); }
+  code {
+    font-family: 'Iosevka', monospace;
+    font-size: 12px; font-weight: 700;
+    background: var(--bg); padding: 2px 6px; border-radius: 4px;
+    border: 1px solid #ddd;
+  }
+
+  ul.plain {
+    list-style: none;
+    padding: 0; margin: 4px 0 0 0;
+  }
+  ul.plain li {
+    padding: 8px 0 8px 22px;
+    font-size: 13.5px; line-height: 1.55; color: #333;
+    border-bottom: 1px dashed #ddd;
+    position: relative;
+  }
+  ul.plain li:last-child { border-bottom: none; padding-bottom: 0; }
+  ul.plain li::before {
+    content: '>';
+    position: absolute; left: 0; top: 8px;
+    color: var(--teal); font-weight: 900;
+  }
+
+  .contact {
+    margin-top: 24px;
+    border: 3px solid var(--dark); border-radius: 14px;
+    background: var(--dark); color: #fff;
+    padding: 18px 22px;
+    text-align: center;
+  }
+  .contact .label {
+    font-size: 9px; font-weight: 700; letter-spacing: 3px;
+    color: var(--yellow); text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .contact a {
+    color: #fff; font-size: 18px; font-weight: 900;
+    text-decoration: none;
+    border-bottom: 3px solid var(--pink);
+  }
+  .contact a:hover { color: var(--pink); border-bottom-color: var(--yellow); }
+
+  @media (max-width: 600px) {
+    nav { padding: 12px 16px; }
+    .page { padding: 88px 20px 32px; }
+    h1 { font-size: 32px; letter-spacing: -1.5px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-logo">BETTER<span class="dot">.</span>FTP</a>
+  <a href="/" class="nav-cta">&larr; Home</a>
+</nav>
+<div class="page-color-bar"></div>
+
+<main class="page">
+  <h1>Privacy Policy.</h1>
+  <div class="effective">Effective: April 27, 2026</div>
+
+  <div class="block">
+    <div class="block-header teal">In Short</div>
+    <div class="block-body">
+      <p>
+        BetterFTP runs entirely on your phone. <strong>We collect nothing.</strong> No
+        account, no servers, no analytics, no third-party tracking. Your test results
+        stay on your device unless you choose to export them via the share sheet.
+      </p>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-header dark">Permissions</div>
+    <div class="block-body">
+      <ul class="plain">
+        <li>
+          <strong>Bluetooth</strong> &mdash; to connect to your indoor cycling trainer
+          and heart-rate monitor over the Fitness Machine Service (FTMS) protocol.
+        </li>
+        <li>
+          <strong>Local file access</strong> &mdash; only when you tap Share, to write a
+          <code>.fit</code> file you can export through your operating system's share
+          sheet.
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-header dark">Platforms</div>
+    <div class="block-body">
+      <p>
+        Apple (App Store / TestFlight) and Google (Play) handle their own installation
+        and crash reporting per their privacy policies. Aggregate, anonymized crash
+        data may be shown to us in their developer consoles. We do not receive any
+        identifiable user data.
+      </p>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-header dark">Changes &amp; Contact</div>
+    <div class="block-body">
+      <p>
+        If we ever add features that change data handling, this page will be updated
+        and the effective date bumped. Questions or requests:
+      </p>
+    </div>
+  </div>
+
+  <div class="contact">
+    <div class="label">Contact</div>
+    <a href="mailto:hello@betterftp.cc">hello@betterftp.cc</a>
+  </div>
+</main>
+
+</body>
+</html>
