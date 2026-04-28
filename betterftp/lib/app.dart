@@ -1,3 +1,4 @@
+import 'package:device_preview/device_preview.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -18,6 +19,10 @@ class BetterFtpApp extends ConsumerWidget {
       title: 'BETTER.FTP',
       theme: buildAppTheme(),
       routerConfig: appRouter,
+      // device_preview hooks — make the previewed device frame, locale,
+      // and text scale flow into the app.
+      locale: DevicePreview.locale(context),
+      builder: DevicePreview.appBuilder,
     );
   }
 }
