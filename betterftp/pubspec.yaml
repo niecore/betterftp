@@ -1,5 +1,5 @@
 name: betterftp
-description: "BetterFTP — Power Lab. Cycling FTP ramp test app."
+description: "betterftp.cc"
 publish_to: 'none'
 
 version: 1.0.0+1
@@ -51,7 +51,7 @@ flutter:
           weight: 900
 
 patrol:
-  app_name: BetterFTP
+  app_name: BETTER.FTP
   android:
     package_name: com.example.ftpRampTest
   ios:
