@@ -59,14 +59,20 @@ class _VitalCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Compact on small phones (SE + mini line) — saves ~12pt of row height.
+    final isCompact = MediaQuery.sizeOf(context).height < 825;
+    final iconSize = isCompact ? 28.0 : 32.0;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+      padding: EdgeInsets.symmetric(
+        vertical: isCompact ? 10 : 14,
+        horizontal: 16,
+      ),
       child: Row(
         children: [
           // Icon box
           Container(
-            width: 32,
-            height: 32,
+            width: iconSize,
+            height: iconSize,
             decoration: BoxDecoration(
               color: iconBg,
               border: Border.all(color: AppColors.dark, width: 2.5),
@@ -83,8 +89,8 @@ class _VitalCell extends StatelessWidget {
             children: [
               Text(
                 value,
-                style: const TextStyle(
-                  fontSize: 26,
+                style: TextStyle(
+                  fontSize: isCompact ? 22 : 26,
                   fontWeight: FontWeight.w900,
                   letterSpacing: -1,
                   color: AppColors.dark,

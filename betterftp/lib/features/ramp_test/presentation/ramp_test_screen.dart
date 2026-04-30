@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
+import '../../../core/responsive/breakpoints.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../shared/widgets/app_button.dart';
+import '../../../shared/widgets/page_max_width.dart';
 import '../../../shared/widgets/hud_interval_section.dart';
 import '../../../shared/widgets/hud_power_section.dart';
 import '../../../shared/widgets/hud_stepped_progress.dart';
@@ -89,6 +91,17 @@ class _RampTestScreenState extends ConsumerState<RampTestScreen> {
 
     final isRunning = state.lifecycle == TestLifecycle.running;
     final isWarmup = state.currentPhase.isWarmup;
+    // On small phones (iPhone SE + iPhone mini line) we tighten
+    // paddings and font sizes throughout the HUD. The pills row is
+    // only dropped when the manual power control box is also visible
+    // — the two together don't fit, but either alone does.
+    final isCompact = context.isCompactHeight;
+    final isTablet = context.isTablet;
+    final showsControlBox = isRunning && state.currentPhase.allowsManualPower;
+    // Pills are passive info (averages, also shown on the result screen);
+    // the control box is the actionable element. When forced to choose,
+    // keep the controls and drop the pills.
+    final showPills = isRunning && !(isCompact && showsControlBox);
 
     // Interval timing (warmup + test stages)
     final intervalDone =
@@ -108,16 +121,25 @@ class _RampTestScreenState extends ConsumerState<RampTestScreen> {
     return Scaffold(
       backgroundColor: AppColors.bg,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.screenSide,
-            AppSpacing.lg,
-            AppSpacing.screenSide,
-            AppSpacing.screenBottom,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
+        child: PageMaxWidth(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.screenSide,
+              AppSpacing.lg,
+              AppSpacing.screenSide,
+              AppSpacing.screenBottom,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+              // Top spacer — only on tablets while running. Combined
+              // with the Spacer above the buttons it pulls the title
+              // row + HUD group toward the vertical center of the
+              // canvas, instead of leaving it pinned to the top with
+              // a yawning gap below. Phones keep the title at the top
+              // so the layout stays compact.
+              if (isRunning && isTablet) const Spacer(),
+
               // ── Top bar: title + Live badge ──
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -134,7 +156,7 @@ class _RampTestScreenState extends ConsumerState<RampTestScreen> {
                   if (isRunning) LiveBadge(isWarmup: isWarmup),
                 ],
               ),
-              const SizedBox(height: 14),
+              SizedBox(height: isCompact ? 8 : 14),
 
               // ── Unified HUD Block ──
               if (isRunning)
@@ -205,8 +227,9 @@ class _RampTestScreenState extends ConsumerState<RampTestScreen> {
                 const SizedBox(height: 10),
               ],
 
-              // ── Summary pills ──
-              if (isRunning)
+              // ── Summary pills ── (hidden only when forced to share
+              // space with the control box on a small phone)
+              if (showPills)
                 HudSummaryPills(
                   elapsed: _formatTime(state.elapsedSeconds),
                   avgPower: '$avgPower',
@@ -288,6 +311,7 @@ class _RampTestScreenState extends ConsumerState<RampTestScreen> {
                 ),
               ],
             ],
+          ),
           ),
         ),
       ),

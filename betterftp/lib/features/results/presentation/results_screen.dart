@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../shared/widgets/app_button.dart';
+import '../../../shared/widgets/page_max_width.dart';
+import '../../../shared/widgets/responsive_screen_body.dart';
 import '../../ramp_test/domain/protocol_registry.dart';
 import '../../ramp_test/domain/ramp_test_state.dart';
 import '../data/fit_share_service.dart';
@@ -81,22 +83,24 @@ class _ResultsScreenState extends State<ResultsScreen> {
     return Scaffold(
       backgroundColor: AppColors.bg,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.screenSide,
-            AppSpacing.lg,
-            AppSpacing.screenSide,
-            AppSpacing.screenBottom,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Scrollable content
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
+        child: PageMaxWidth(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.screenSide,
+              AppSpacing.lg,
+              AppSpacing.screenSide,
+              AppSpacing.screenBottom,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+              // Result cards — centred on tablets, top-aligned on
+              // phones, scrollable when they overflow.
+              ResponsiveScreenBody(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
                       // Header
                       const Center(
                         child: Column(
@@ -376,8 +380,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                           ),
                         ),
                       ),
-                    ],
-                  ),
+                  ],
                 ),
               ),
 
@@ -395,6 +398,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                 onPressed: () => context.go('/'),
               ),
             ],
+          ),
           ),
         ),
       ),

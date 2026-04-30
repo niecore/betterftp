@@ -15,12 +15,21 @@ class HudPowerSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Compact mode for small phones (iPhone SE, iPhone mini line) — keeps
+    // the HUD legible while reclaiming ~24pt of vertical space.
+    // 825 catches iPhone 13 mini (812) but not regular iPhone 13 (844).
+    final isCompact = MediaQuery.sizeOf(context).height < 825;
     final delta = currentPower - targetPower;
     final deltaStr = delta >= 0 ? '+$delta' : '$delta';
     final isOver = delta >= 0;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+      padding: EdgeInsets.fromLTRB(
+        20,
+        isCompact ? 14 : 20,
+        20,
+        isCompact ? 10 : 16,
+      ),
       decoration: const BoxDecoration(
         border: Border(
           bottom: BorderSide(color: AppColors.borderLight, width: 2),
@@ -34,15 +43,15 @@ class HudPowerSection extends StatelessWidget {
               children: [
                 Text(
                   '$currentPower',
-                  style: const TextStyle(
-                    fontSize: 72,
+                  style: TextStyle(
+                    fontSize: isCompact ? 56 : 72,
                     fontWeight: FontWeight.w900,
                     letterSpacing: -3,
                     color: AppColors.dark,
                     height: 0.85,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: isCompact ? 2 : 4),
                 const Text(
                   'WATTS',
                   style: TextStyle(

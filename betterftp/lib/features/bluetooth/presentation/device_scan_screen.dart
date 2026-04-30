@@ -14,6 +14,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/icon_box.dart';
+import '../../../shared/widgets/page_max_width.dart';
 import '../../../shared/widgets/tag_widget.dart';
 import '../data/ble_debug_logger.dart';
 import '../data/ble_scanner_service.dart';
@@ -454,18 +455,24 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen>
     return Scaffold(
       backgroundColor: AppColors.bg,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.screenSide,
-            AppSpacing.lg,
-            AppSpacing.screenSide,
-            AppSpacing.screenBottom,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildLogo(),
-              const SizedBox(height: 22),
+        child: PageMaxWidth(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.screenSide,
+              AppSpacing.lg,
+              AppSpacing.screenSide,
+              AppSpacing.screenBottom,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+              // Top spacer — combined with the one above the button,
+              // this vertically centers the content on tall screens.
+              // Both collapse to zero on small screens (e.g. iPhone SE)
+              // so the existing tight layout is preserved there.
+              const Spacer(),
+              _buildLogo(context),
+              SizedBox(height: _logoToContentGap(context)),
               _buildModeSelector(),
               AnimatedBuilder(
                 animation: _shakeAnimation,
@@ -499,13 +506,71 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen>
               ),
             ],
           ),
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildLogo() {
-    const double badgeSize = 200;
+  /// Logo sizing tiers based on available screen height. Keeps the
+  /// home screen viewable on iPhone SE without falling back to scrolling.
+  ({
+    double badgeSize,
+    double badgeBottomPadding,
+    double badgeToWordmarkGap,
+    double wordmarkSize,
+    double wordmarkToSubtitleGap,
+    double subtitleSize,
+    double subtitleSpacing,
+  }) _logoMetrics(BuildContext context) {
+    final h = MediaQuery.sizeOf(context).height;
+    if (h < 600) {
+      // iPhone SE 1st gen (568pt) and similar.
+      return (
+        badgeSize: 130,
+        badgeBottomPadding: 10,
+        badgeToWordmarkGap: 10,
+        wordmarkSize: 36,
+        wordmarkToSubtitleGap: 4,
+        subtitleSize: 10,
+        subtitleSpacing: 3,
+      );
+    }
+    if (h < 700) {
+      // iPhone SE 2nd/3rd gen (667pt), small Androids.
+      return (
+        badgeSize: 160,
+        badgeBottomPadding: 12,
+        badgeToWordmarkGap: 12,
+        wordmarkSize: 44,
+        wordmarkToSubtitleGap: 5,
+        subtitleSize: 11,
+        subtitleSpacing: 3.5,
+      );
+    }
+    // Default — most modern phones.
+    return (
+      badgeSize: 200,
+      badgeBottomPadding: 16,
+      badgeToWordmarkGap: 16,
+      wordmarkSize: 52,
+      wordmarkToSubtitleGap: 6,
+      subtitleSize: 12,
+      subtitleSpacing: 4,
+    );
+  }
+
+  /// Gap between the logo and the mode-selector block, scaled the same
+  /// way as the logo so vertical rhythm stays consistent.
+  double _logoToContentGap(BuildContext context) {
+    final h = MediaQuery.sizeOf(context).height;
+    if (h < 600) return 8;
+    if (h < 700) return 12;
+    return 22;
+  }
+
+  Widget _buildLogo(BuildContext context) {
+    final m = _logoMetrics(context);
 
     return Center(
       child: Column(
@@ -515,8 +580,8 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen>
             onTap: _onLogoTap,
             behavior: HitTestBehavior.opaque,
             child: Container(
-              width: badgeSize,
-              height: badgeSize,
+              width: m.badgeSize,
+              height: m.badgeSize,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: AppColors.bg,
@@ -530,11 +595,11 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen>
               ),
               child: ClipOval(
                 child: Padding(
-                  padding: const EdgeInsets.only(
+                  padding: EdgeInsets.only(
                     top: 0,
-                    bottom: 16,
-                    left: 32,
-                    right: 32,
+                    bottom: m.badgeBottomPadding,
+                    left: m.badgeSize * 0.16,
+                    right: m.badgeSize * 0.16,
                   ),
                   child: _hamsterController.value.isInitialized
                       ? ColorFiltered(
@@ -556,19 +621,19 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen>
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: m.badgeToWordmarkGap),
           // Wordmark
           RichText(
             textAlign: TextAlign.center,
-            text: const TextSpan(
+            text: TextSpan(
               style: TextStyle(
                 fontFamily: 'Iosevka',
-                fontSize: 52,
+                fontSize: m.wordmarkSize,
                 fontWeight: FontWeight.w900,
                 letterSpacing: -2,
                 height: 0.92,
               ),
-              children: [
+              children: const [
                 TextSpan(
                   text: 'BETTER',
                   style: TextStyle(color: AppColors.teal),
@@ -584,14 +649,14 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen>
               ],
             ),
           ),
-          const SizedBox(height: 6),
-          const Text(
+          SizedBox(height: m.wordmarkToSubtitleGap),
+          Text(
             'betterftp.cc',
             style: TextStyle(
-              fontSize: 12,
+              fontSize: m.subtitleSize,
               fontWeight: FontWeight.w500,
-              letterSpacing: 4,
-              color: Color(0xFFCCCCCC),
+              letterSpacing: m.subtitleSpacing,
+              color: const Color(0xFFCCCCCC),
             ),
           ),
         ],
