@@ -31,6 +31,8 @@ pubspec.lock
 *.apk
 *.aab
 *.jks
+*.keystore
+key.properties
 local.properties
 .gradle/
 

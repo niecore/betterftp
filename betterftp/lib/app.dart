@@ -17,6 +17,7 @@ class BetterFtpApp extends ConsumerWidget {
 
     return MaterialApp.router(
       title: 'BETTER.FTP',
+      debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
       routerConfig: appRouter,
       // device_preview hooks — make the previewed device frame, locale,
