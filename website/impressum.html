@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Impressum — BetterFTP</title>
+<meta name="description" content="Impressum BetterFTP.">
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<style>
+  @import url('https://cdn.jsdelivr.net/fontsource/fonts/iosevka@latest/latin-400-normal.min.css');
+  @import url('https://cdn.jsdelivr.net/fontsource/fonts/iosevka@latest/latin-700-normal.min.css');
+  @import url('https://cdn.jsdelivr.net/fontsource/fonts/iosevka@latest/latin-900-normal.min.css');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --teal: #0D9488;
+    --pink: #EC4899;
+    --yellow: #FACC15;
+    --yellow-deep: #EAB308;
+    --dark: #1a1a1a;
+    --bg: #F5F5F0;
+    --card: #FFFFFF;
+    --muted: #AAAAAA;
+  }
+
+  body {
+    font-family: 'Iosevka', monospace;
+    background: var(--bg);
+    color: var(--dark);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: var(--dark);
+    border-bottom: 3px solid var(--dark);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 32px;
+  }
+  .nav-logo {
+    font-weight: 900; font-size: 18px;
+    color: var(--teal); letter-spacing: -1px;
+    text-decoration: none;
+  }
+  .nav-logo .dot { color: var(--pink); }
+  .nav-cta {
+    background: var(--teal); color: #fff; border: 2px solid var(--teal);
+    padding: 8px 20px; border-radius: 10px;
+    font-family: 'Iosevka', monospace;
+    font-weight: 700; font-size: 12px; letter-spacing: 1px;
+    text-transform: uppercase; transition: all 0.2s; text-decoration: none;
+  }
+  .nav-cta:hover { background: var(--yellow); border-color: var(--yellow-deep); color: var(--dark); }
+  .page-color-bar {
+    position: fixed; top: 51px; left: 0; right: 0; height: 4px; z-index: 99;
+    background: linear-gradient(90deg, var(--teal) 0%, var(--teal) 60%, var(--pink) 60%, var(--pink) 85%, var(--yellow) 85%, var(--yellow) 100%);
+  }
+
+  .page {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 96px 32px 48px;
+  }
+
+  h1 {
+    font-size: 40px; font-weight: 900; letter-spacing: -2px;
+    line-height: 1.05; margin-bottom: 6px;
+  }
+  .updated {
+    font-size: 11px; font-weight: 700; letter-spacing: 2px;
+    color: var(--muted); text-transform: uppercase;
+    margin-bottom: 28px;
+  }
+
+  .block {
+    border: 3px solid var(--dark);
+    border-radius: 14px;
+    background: var(--card);
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .block:last-of-type { margin-bottom: 0; }
+  .block-header {
+    padding: 10px 16px;
+    font-size: 11px; font-weight: 900; letter-spacing: 2px;
+    text-transform: uppercase; color: #fff;
+    background: var(--teal);
+    border-bottom: 3px solid var(--dark);
+  }
+  .block-body { padding: 20px 22px; }
+
+  h2 {
+    font-size: 14px; font-weight: 900; letter-spacing: 1px;
+    text-transform: uppercase; color: var(--dark);
+    margin-bottom: 10px;
+  }
+  h2:not(:first-child) { margin-top: 18px; }
+
+  p, address {
+    font-size: 14px; font-weight: 400; line-height: 1.7;
+    color: #333;
+    font-style: normal;
+    margin-bottom: 14px;
+  }
+  p:last-child, address:last-child { margin-bottom: 0; }
+  a.inline { color: var(--teal); font-weight: 700; text-decoration: none; border-bottom: 2px solid var(--teal); }
+  a.inline:hover { color: var(--pink); border-bottom-color: var(--pink); }
+
+  .contact {
+    margin-top: 20px;
+    text-align: center;
+    font-size: 13px; font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 0.3px;
+  }
+  .contact a { color: var(--teal); text-decoration: none; }
+  .contact a:hover { color: var(--pink); }
+
+  @media (max-width: 600px) {
+    nav { padding: 12px 16px; }
+    .page { padding: 88px 20px 32px; }
+    h1 { font-size: 32px; letter-spacing: -1.5px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-logo">BETTER<span class="dot">.</span>FTP</a>
+  <a href="/" class="nav-cta">&larr; Home</a>
+</nav>
+<div class="page-color-bar"></div>
+
+<main class="page">
+  <h1>Impressum.</h1>
+  <div class="updated">Stand: 06. Mai 2026</div>
+
+  <div class="block">
+    <div class="block-header">Angaben gemäß § 5 TMG</div>
+    <div class="block-body">
+      <address>
+        Nico Müller<br>
+        Bayreuther Str. 13<br>
+        91301 Forchheim<br>
+        Deutschland
+      </address>
+
+      <h2>Kontakt</h2>
+      <p>
+        E-Mail: <a class="inline" href="mailto:hello@betterftp.cc">hello@betterftp.cc</a>
+      </p>
+
+      <h2>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h2>
+      <address>
+        Nico Müller<br>
+        Bayreuther Str. 13<br>
+        91301 Forchheim
+      </address>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-header">Haftung für Inhalte</div>
+    <div class="block-body">
+      <p>Als Diensteanbieter sind wir gemäß § 7 Abs. 1 TMG für eigene Inhalte auf diesen Seiten nach den allgemeinen Gesetzen verantwortlich. Nach §§ 8 bis 10 TMG sind wir als Diensteanbieter jedoch nicht verpflichtet, übermittelte oder gespeicherte fremde Informationen zu überwachen oder nach Umständen zu forschen, die auf eine rechtswidrige Tätigkeit hinweisen.</p>
+      <p>Verpflichtungen zur Entfernung oder Sperrung der Nutzung von Informationen nach den allgemeinen Gesetzen bleiben hiervon unberührt. Eine diesbezügliche Haftung ist jedoch erst ab dem Zeitpunkt der Kenntnis einer konkreten Rechtsverletzung möglich. Bei Bekanntwerden von entsprechenden Rechtsverletzungen werden wir diese Inhalte umgehend entfernen.</p>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-header">Haftung für Links</div>
+    <div class="block-body">
+      <p>Unser Angebot enthält Links zu externen Websites Dritter, auf deren Inhalte wir keinen Einfluss haben. Deshalb können wir für diese fremden Inhalte auch keine Gewähr übernehmen. Für die Inhalte der verlinkten Seiten ist stets der jeweilige Anbieter oder Betreiber der Seiten verantwortlich. Die verlinkten Seiten wurden zum Zeitpunkt der Verlinkung auf mögliche Rechtsverstöße überprüft. Rechtswidrige Inhalte waren zum Zeitpunkt der Verlinkung nicht erkennbar.</p>
+      <p>Eine permanente inhaltliche Kontrolle der verlinkten Seiten ist jedoch ohne konkrete Anhaltspunkte einer Rechtsverletzung nicht zumutbar. Bei Bekanntwerden von Rechtsverletzungen werden wir derartige Links umgehend entfernen.</p>
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="block-header">Urheberrecht</div>
+    <div class="block-body">
+      <p>Die durch den Seitenbetreiber erstellten Inhalte und Werke auf diesen Seiten unterliegen dem deutschen Urheberrecht. Die Vervielfältigung, Bearbeitung, Verbreitung und jede Art der Verwertung außerhalb der Grenzen des Urheberrechtes bedürfen der schriftlichen Zustimmung des jeweiligen Autors bzw. Erstellers.</p>
+      <p>Soweit die Inhalte auf dieser Seite nicht vom Betreiber erstellt wurden, werden die Urheberrechte Dritter beachtet. Insbesondere werden Inhalte Dritter als solche gekennzeichnet. Sollten Sie trotzdem auf eine Urheberrechtsverletzung aufmerksam werden, bitten wir um einen entsprechenden Hinweis. Bei Bekanntwerden von Rechtsverletzungen werden wir derartige Inhalte umgehend entfernen.</p>
+    </div>
+  </div>
+
+  <div class="contact">
+    Kontakt: <a href="mailto:hello@betterftp.cc">hello@betterftp.cc</a>
+  </div>
+</main>
+
+</body>
+</html>
