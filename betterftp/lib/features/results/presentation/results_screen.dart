@@ -1,25 +1,32 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../shared/widgets/app_button.dart';
+import '../../../shared/widgets/ftp_result_block.dart';
 import '../../../shared/widgets/page_max_width.dart';
 import '../../../shared/widgets/responsive_screen_body.dart';
 import '../../ramp_test/domain/protocol_registry.dart';
 import '../../ramp_test/domain/ramp_test_state.dart';
+import '../../ramp_test/domain/test_phase.dart';
+import '../../ramp_test/presentation/ramp_test_controller.dart';
 import '../data/fit_share_service.dart';
 
-class ResultsScreen extends StatefulWidget {
-  final TestRunState testState;
-
-  const ResultsScreen({super.key, required this.testState});
+/// Results interstitial — shown while the FSM sits in the paused
+/// `results` phase between the test and (optional) cooldown, and again
+/// after cooldown. Buttons drive the FSM via [UserAction]; phase-change
+/// listeners route to the next screen.
+class ResultsScreen extends ConsumerStatefulWidget {
+  const ResultsScreen({super.key});
 
   @override
-  State<ResultsScreen> createState() => _ResultsScreenState();
+  ConsumerState<ResultsScreen> createState() => _ResultsScreenState();
 }
 
-class _ResultsScreenState extends State<ResultsScreen> {
+class _ResultsScreenState extends ConsumerState<ResultsScreen> {
   bool _isExporting = false;
 
   String _formatTime(int totalSeconds) {
@@ -28,25 +35,19 @@ class _ResultsScreenState extends State<ResultsScreen> {
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 
-  Widget _buildSummaryRows() {
-    final protocol = ProtocolRegistry.get(widget.testState.protocol);
-    final extraMetrics = protocol.resultMetrics(widget.testState);
+  Widget _buildSummaryRows(TestRunState state) {
+    final protocol = ProtocolRegistry.get(state.protocol);
+    final extraMetrics = protocol.resultMetrics(state);
 
     final rows = <Map<String, String>>[
       for (final metric in extraMetrics)
         {'label': metric.label, 'value': metric.value},
-      {'label': 'Max Power', 'value': '${widget.testState.maxPower} W'},
-      if (widget.testState.maxHeartRate != null)
-        {
-          'label': 'Max Heart Rate',
-          'value': '${widget.testState.maxHeartRate} BPM'
-        },
-      if (widget.testState.averageHeartRate != null)
-        {
-          'label': 'Avg Heart Rate',
-          'value': '${widget.testState.averageHeartRate} BPM'
-        },
-      {'label': 'Protocol', 'value': widget.testState.protocol.label},
+      {'label': 'Max Power', 'value': '${state.maxPower} W'},
+      if (state.maxHeartRate != null)
+        {'label': 'Max Heart Rate', 'value': '${state.maxHeartRate} BPM'},
+      if (state.averageHeartRate != null)
+        {'label': 'Avg Heart Rate', 'value': '${state.averageHeartRate} BPM'},
+      {'label': 'Protocol', 'value': state.protocol.label},
     ];
 
     return Column(
@@ -61,10 +62,10 @@ class _ResultsScreenState extends State<ResultsScreen> {
     );
   }
 
-  Future<void> _shareFitFile() async {
+  Future<void> _shareFitFile(TestRunState state) async {
     setState(() => _isExporting = true);
     try {
-      await FitShareService().shareTestResult(widget.testState);
+      await FitShareService().shareTestResult(state);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -80,6 +81,21 @@ class _ResultsScreenState extends State<ResultsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(rampTestControllerProvider);
+    final controller = ref.read(rampTestControllerProvider.notifier);
+
+    // Phase-driven navigation: leaving the `results` phase always means
+    // the user pressed a button — route to the new owning screen.
+    ref.listen(rampTestControllerProvider, (previous, next) {
+      if (previous?.currentPhase.id == next.currentPhase.id) return;
+      switch (next.currentPhase.id) {
+        case 'done':
+          WakelockPlus.disable();
+          context.go('/');
+          break;
+      }
+    });
+
     return Scaffold(
       backgroundColor: AppColors.bg,
       body: SafeArea(
@@ -121,68 +137,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                       const SizedBox(height: 18),
 
                       // FTP result block
-                      Container(
-                        decoration: BoxDecoration(
-                          border:
-                              Border.all(color: AppColors.dark, width: 3),
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(11),
-                          child: Column(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 10,
-                                  horizontal: 16,
-                                ),
-                                color: AppColors.pink,
-                                width: double.infinity,
-                                child: const Text(
-                                  'ESTIMATED FTP',
-                                  style: TextStyle(
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: 2,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                              Container(
-                                color: AppColors.card,
-                                width: double.infinity,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 24,
-                                  horizontal: 16,
-                                ),
-                                child: Column(
-                                  children: [
-                                    Text(
-                                      '${widget.testState.calculatedFtp ?? 0}',
-                                      style: const TextStyle(
-                                        fontSize: 68,
-                                        fontWeight: FontWeight.w900,
-                                        letterSpacing: -3,
-                                        height: 1,
-                                        color: AppColors.dark,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    const Text(
-                                      'WATTS',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: AppColors.muted,
-                                        letterSpacing: 2,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                      FtpResultBlock(ftp: state.calculatedFtp ?? 0),
                       const SizedBox(height: 10),
 
                       // Max HR + Duration stat cards
@@ -236,8 +191,8 @@ class _ResultsScreenState extends State<ResultsScreen> {
                                       child: Column(
                                         children: [
                                           Text(
-                                            widget.testState.maxHeartRate != null
-                                                ? '${widget.testState.maxHeartRate}'
+                                            state.maxHeartRate != null
+                                                ? '${state.maxHeartRate}'
                                                 : '--',
                                             style: const TextStyle(
                                               fontSize: 30,
@@ -313,8 +268,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                                       child: Column(
                                         children: [
                                           Text(
-                                            _formatTime(
-                                                widget.testState.elapsedSeconds),
+                                            _formatTime(state.elapsedSeconds),
                                             style: const TextStyle(
                                               fontSize: 30,
                                               fontWeight: FontWeight.w900,
@@ -374,7 +328,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                               ),
                               Container(
                                 color: AppColors.card,
-                                child: _buildSummaryRows(),
+                                child: _buildSummaryRows(state),
                               ),
                             ],
                           ),
@@ -387,15 +341,16 @@ class _ResultsScreenState extends State<ResultsScreen> {
               // Buttons pinned at bottom
               const SizedBox(height: 10),
               AppButton(
-                label: _isExporting ? 'Exporting...' : 'Share .FIT',
+                label: _isExporting ? 'Saving...' : 'Save .FIT',
                 variant: AppButtonVariant.teal,
-                onPressed: _isExporting ? null : _shareFitFile,
+                onPressed: _isExporting ? null : () => _shareFitFile(state),
               ),
               const SizedBox(height: 8),
               AppButton(
-                label: '\u2190 Back to Home',
+                label: 'Discard & Back to Home',
                 variant: AppButtonVariant.outline,
-                onPressed: () => context.go('/'),
+                onPressed: () =>
+                    controller.onUserAction(UserAction.finish),
               ),
             ],
           ),

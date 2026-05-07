@@ -169,10 +169,10 @@ class TestInstructionsScreen extends StatelessWidget {
 
                 // ── Confirmation button ──
                 AppButton(
-                  label: "I'm Ready — Start",
+                  label: 'Start Protocol',
                   variant: AppButtonVariant.primary,
                   prefixIcon: '\u25B6',
-                  onPressed: () => context.go('/ramp-test', extra: {
+                  onPressed: () => context.go('/workout', extra: {
                     'autoStart': true,
                     'protocol': protocol.name,
                   }),

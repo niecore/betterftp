@@ -7,6 +7,7 @@ import '../../../core/responsive/breakpoints.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../shared/widgets/app_button.dart';
+import '../../../shared/widgets/ftp_result_block.dart';
 import '../../../shared/widgets/page_max_width.dart';
 import '../../../shared/widgets/hud_interval_section.dart';
 import '../../../shared/widgets/hud_power_section.dart';
@@ -17,32 +18,46 @@ import '../../../shared/widgets/live_badge.dart';
 import '../../../shared/widgets/test_control_box.dart';
 import '../domain/protocol_registry.dart';
 import '../domain/ramp_test_state.dart';
+import '../domain/test_phase.dart';
 import 'ramp_test_controller.dart';
 
-class RampTestScreen extends ConsumerStatefulWidget {
+/// Active-workout screen — renders any *recording* phase of the FSM
+/// (warmup, ramping/sustained, cooldown). Title, badge, HUD content,
+/// and buttons all switch off `state.currentPhase.id`. Paused/terminal
+/// phases (results, done) live on their own screens; this one routes
+/// to them via the phase-change listener.
+class WorkoutScreen extends ConsumerStatefulWidget {
   final bool autoStart;
   final TestProtocol protocol;
 
-  const RampTestScreen({
+  const WorkoutScreen({
     super.key,
     this.autoStart = false,
     this.protocol = TestProtocol.ramp,
   });
 
   @override
-  ConsumerState<RampTestScreen> createState() => _RampTestScreenState();
+  ConsumerState<WorkoutScreen> createState() => _WorkoutScreenState();
 }
 
-class _RampTestScreenState extends ConsumerState<RampTestScreen> {
+class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Reset state so a fresh test can start
-      ref.invalidate(rampTestControllerProvider);
-      if (widget.autoStart) {
+      final state = ref.read(rampTestControllerProvider);
+      // Only reset+autoStart on a fresh entry. If we land here mid-FSM
+      // (e.g. cooldown phase navigated from /results), preserve all
+      // accumulated readings — invalidating would wipe the FIT export.
+      if (state.lifecycle == TestLifecycle.idle ||
+          state.lifecycle == TestLifecycle.completed) {
+        ref.invalidate(rampTestControllerProvider);
+        if (widget.autoStart) {
+          WakelockPlus.enable();
+          ref.read(rampTestControllerProvider.notifier).start(widget.protocol);
+        }
+      } else {
         WakelockPlus.enable();
-        ref.read(rampTestControllerProvider.notifier).start(widget.protocol);
       }
     });
   }
@@ -80,34 +95,52 @@ class _RampTestScreenState extends ConsumerState<RampTestScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(rampTestControllerProvider);
     final controller = ref.read(rampTestControllerProvider.notifier);
-    final protocol = ProtocolRegistry.get(widget.protocol);
+    final protocol = ProtocolRegistry.get(state.protocol);
 
+    // Phase-driven navigation: leave for the screen that owns the new
+    // phase. Cooldown stays right here.
     ref.listen(rampTestControllerProvider, (previous, next) {
-      if (next.lifecycle == TestLifecycle.completed &&
-          previous?.lifecycle != TestLifecycle.completed) {
-        context.go('/results', extra: next);
+      if (previous?.currentPhase.id == next.currentPhase.id) return;
+      switch (next.currentPhase.id) {
+        case 'results':
+          context.go('/results');
+          break;
+        case 'done':
+          WakelockPlus.disable();
+          context.go('/');
+          break;
       }
     });
 
     final isRunning = state.lifecycle == TestLifecycle.running;
-    final isWarmup = state.currentPhase.isWarmup;
+    final phase = state.currentPhase;
+    final isWarmup = phase.id == 'warmup';
+    final isCooldown = phase.id == 'cooldown';
     // On small phones (iPhone SE + iPhone mini line) we tighten
     // paddings and font sizes throughout the HUD. The pills row is
     // only dropped when the manual power control box is also visible
     // — the two together don't fit, but either alone does.
     final isCompact = context.isCompactHeight;
     final isTablet = context.isTablet;
-    final showsControlBox = isRunning && state.currentPhase.allowsManualPower;
+    final showsControlBox = isRunning && phase.allowsManualPower;
     // Pills are passive info (averages, also shown on the result screen);
     // the control box is the actionable element. When forced to choose,
-    // keep the controls and drop the pills.
-    final showPills = isRunning && !(isCompact && showsControlBox);
+    // keep the controls and drop the pills. Cooldown skips them entirely
+    // — averages aren't meaningful post-effort.
+    final showPills =
+        isRunning && !isCooldown && !(isCompact && showsControlBox);
+    // Per-stage progress only makes sense for the test phase ladder.
+    final showProgressFooter = isRunning && !isCooldown;
 
-    // Interval timing (warmup + test stages)
-    final intervalDone =
-        isWarmup ? state.warmupElapsedSeconds : state.stageElapsedSeconds;
-    final intervalTotal =
-        isWarmup ? state.warmupDuration : protocol.stageDurationSeconds;
+    // Top-bar title flips for cooldown so the user knows where they are.
+    final title = isCooldown ? 'Cooldown' : '${protocol.label} Test';
+
+    // Interval timing — for stepped phases (ramp's `ramping`) the
+    // protocol returns the per-stage duration; otherwise the phase
+    // duration. `stageElapsedSeconds` resets on phase change AND on
+    // stage advance, so the bar fills correctly in both cases.
+    final intervalDone = state.stageElapsedSeconds;
+    final intervalTotal = protocol.currentIntervalDurationSeconds(state);
     final intervalLeft = (intervalTotal - intervalDone).clamp(0, 99999);
 
     // Current stage (1-based for display)
@@ -118,7 +151,15 @@ class _RampTestScreenState extends ConsumerState<RampTestScreen> {
     final avgHr = state.averageHeartRate;
     final maxHr = state.maxHeartRate;
 
-    return Scaffold(
+    return PopScope(
+      // Block back-gesture only during cooldown so an accidental swipe
+      // doesn't wipe the recording. Skip cleanly via the FSM.
+      canPop: !isCooldown,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        controller.onUserAction(UserAction.skip);
+      },
+      child: Scaffold(
       backgroundColor: AppColors.bg,
       body: SafeArea(
         child: PageMaxWidth(
@@ -145,7 +186,7 @@ class _RampTestScreenState extends ConsumerState<RampTestScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    '${protocol.label} Test',
+                    title,
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w900,
@@ -153,10 +194,23 @@ class _RampTestScreenState extends ConsumerState<RampTestScreen> {
                       letterSpacing: -0.5,
                     ),
                   ),
-                  if (isRunning) LiveBadge(isWarmup: isWarmup),
+                  if (isRunning)
+                    LiveBadge(isWarmup: isWarmup, isCooldown: isCooldown),
                 ],
               ),
               SizedBox(height: isCompact ? 8 : 14),
+
+              // ── FTP result preview (cooldown only) ──
+              // FTP is calculated at the test→cooldown boundary, so we
+              // can give the rider instant gratification while they
+              // spin down. Full stats wait for the results screen.
+              if (isCooldown && state.calculatedFtp != null) ...[
+                FtpResultBlock(
+                  ftp: state.calculatedFtp!,
+                  size: FtpResultBlockSize.compact,
+                ),
+                const SizedBox(height: 10),
+              ],
 
               // ── Unified HUD Block ──
               if (isRunning)
@@ -209,11 +263,12 @@ class _RampTestScreenState extends ConsumerState<RampTestScreen> {
                           cadence: state.currentCadence,
                         ),
 
-                        // ── Progress footer ──
-                        HudSteppedProgress(
-                          totalStages: protocol.totalStages,
-                          currentStage: displayStage,
-                        ),
+                        // ── Progress footer (test phases only) ──
+                        if (showProgressFooter)
+                          HudSteppedProgress(
+                            totalStages: protocol.totalStages,
+                            currentStage: displayStage,
+                          ),
                       ],
                     ),
                   ),
@@ -222,13 +277,13 @@ class _RampTestScreenState extends ConsumerState<RampTestScreen> {
               if (isRunning) const SizedBox(height: 10),
 
               // ── Test control box (any phase that allows manual power) ──
-              if (isRunning && state.currentPhase.allowsManualPower) ...[
+              if (showsControlBox) ...[
                 TestControlBox(onAdjust: controller.adjustPower),
                 const SizedBox(height: 10),
               ],
 
-              // ── Summary pills ── (hidden only when forced to share
-              // space with the control box on a small phone)
+              // ── Summary pills ── (hidden during cooldown, and when
+              // forced to share space with the control box on a small phone)
               if (showPills)
                 HudSummaryPills(
                   elapsed: _formatTime(state.elapsedSeconds),
@@ -283,37 +338,32 @@ class _RampTestScreenState extends ConsumerState<RampTestScreen> {
                   },
                 ),
               ] else if (isRunning) ...[
-                Row(
-                  children: [
-                    if (state.currentPhase.isSkippable) ...[
-                      Expanded(
-                        child: AppButton(
-                          label: isWarmup ? 'Skip Warmup' : 'Skip Phase',
-                          variant: AppButtonVariant.primary,
-                          prefixIcon: '\u203A\u203A',
-                          onPressed: controller.skipPhase,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                    ],
-                    Expanded(
-                      child: AppButton(
-                        label: 'Stop Test',
-                        variant: AppButtonVariant.pink,
-                        prefixIcon: '\u25A0',
-                        onPressed: () {
-                          WakelockPlus.disable();
-                          controller.stop();
-                        },
-                      ),
-                    ),
-                  ],
+                // Each running phase exposes exactly one forward action:
+                //   warmup   → Start Test       (skip → ramping/sustained)
+                //   test     → Finish Test      (endEffort → cooldown)
+                //   cooldown → Finish Cooldown  (skip → results)
+                AppButton(
+                  label: isWarmup
+                      ? 'Start Test'
+                      : isCooldown
+                          ? 'Finish Cooldown'
+                          : 'Finish Test',
+                  variant: isWarmup
+                      ? AppButtonVariant.primary
+                      : AppButtonVariant.pink,
+                  prefixIcon: isWarmup ? '\u25B6' : '\u25A0',
+                  onPressed: () => controller.onUserAction(
+                    isWarmup ? UserAction.skip
+                        : isCooldown ? UserAction.skip
+                            : UserAction.endEffort,
+                  ),
                 ),
               ],
             ],
           ),
           ),
         ),
+      ),
       ),
     );
   }

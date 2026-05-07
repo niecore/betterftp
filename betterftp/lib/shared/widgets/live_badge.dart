@@ -2,11 +2,17 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
 
-/// Phase badge with blinking dot — shows "WARMUP" (teal) or "LIVE" (pink).
+/// Phase badge with blinking dot — shows "WARMUP" / "COOLDOWN" (teal) or
+/// "LIVE" (pink).
 class LiveBadge extends StatefulWidget {
   final bool isWarmup;
+  final bool isCooldown;
 
-  const LiveBadge({super.key, this.isWarmup = false});
+  const LiveBadge({
+    super.key,
+    this.isWarmup = false,
+    this.isCooldown = false,
+  });
 
   @override
   State<LiveBadge> createState() => _LiveBadgeState();
@@ -35,10 +41,15 @@ class _LiveBadgeState extends State<LiveBadge>
 
   @override
   Widget build(BuildContext context) {
-    final color = widget.isWarmup ? AppColors.teal : AppColors.pink;
-    final dotColor = widget.isWarmup ? AppColors.tealLight : AppColors.pinkLight;
-    final bgColor = widget.isWarmup ? AppColors.tealBg : AppColors.pinkBg;
-    final label = widget.isWarmup ? 'WARMUP' : 'LIVE';
+    final isMuted = widget.isWarmup || widget.isCooldown;
+    final color = isMuted ? AppColors.teal : AppColors.pink;
+    final dotColor = isMuted ? AppColors.tealLight : AppColors.pinkLight;
+    final bgColor = isMuted ? AppColors.tealBg : AppColors.pinkBg;
+    final label = widget.isWarmup
+        ? 'WARMUP'
+        : widget.isCooldown
+            ? 'COOLDOWN'
+            : 'LIVE';
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 12),

@@ -3,8 +3,9 @@ import 'test_phase.dart';
 
 /// Contract that every test protocol must implement.
 ///
-/// The controller delegates all protocol-specific logic here so it
-/// never needs to branch on protocol type.
+/// The controller is a generic FSM dispatcher: it ticks timers, drives
+/// transitions, and manages BLE subscriptions. All protocol-specific
+/// policy — phase sequence, what user actions mean — lives here.
 abstract class TestProtocolDefinition {
   // ── Identity ──────────────────────────────────────────────────────
 
@@ -20,56 +21,51 @@ abstract class TestProtocolDefinition {
   /// Step-by-step instructions shown on the pre-test briefing screen.
   List<String> get instructions;
 
-  // ── Warmup ────────────────────────────────────────────────────────
+  // ── FSM ───────────────────────────────────────────────────────────
 
-  /// Pre-built warmup phase shared by all protocols.
-  TestPhase get warmupPhase;
+  /// Phase the FSM enters when [RampTestController.start] is called.
+  TestPhase get initialPhase;
 
-  /// Duration of the warmup in seconds.
-  int get warmupDurationSeconds;
+  /// Next phase when [current]'s [TestPhase.durationSeconds] expires.
+  /// Return [current] (or any phase with the same id) to stay put.
+  TestPhase nextPhaseOnTimerExpiry(TestPhase current, TestRunState state);
 
-  /// ERG power during warmup.
-  int get warmupPower;
+  /// Next phase in response to a user action; null if the action is
+  /// invalid in [current].
+  TestPhase? nextPhaseOnUserAction(
+    TestPhase current,
+    UserAction action,
+    TestRunState state,
+  );
 
-  // ── Test phase ────────────────────────────────────────────────────
+  /// Stage-internal tick — fired every second while in a recording,
+  /// non-paused phase. Returns null if no stage change is needed.
+  /// Used for protocols with stepped stages (e.g. ramp's 20W bumps).
+  TestTickResult? onStageTick(TestRunState state);
 
-  /// The phase the test transitions to after warmup ends.
-  TestPhase get initialTestPhase;
-
-  /// Target power when the test phase begins.
-  int get initialTestPower;
-
-  /// Duration of one stage/interval in seconds. Used by the interval
-  /// countdown bar (60 for ramp stages, 1200 for a single 20-min block).
-  int get stageDurationSeconds;
-
-  /// Number of stages to render in the stepped progress footer.
-  /// For open-ended ramps this is an estimated display maximum.
-  int get totalStages;
-
-  // ── Tick logic ────────────────────────────────────────────────────
-
-  /// Called every second while the test is running (not during warmup).
-  ///
-  /// Returns a [TestTickResult] describing what should change.
-  /// The controller applies the result without knowing protocol details.
-  TestTickResult onTick(TestRunState state);
+  /// Duration of the current interval-bar window. For phases with a
+  /// fixed [TestPhase.durationSeconds] this is just that. For stepped,
+  /// open-ended phases like ramp's `ramping` it's the per-stage clock
+  /// (e.g. 60 s) since `stageElapsedSeconds` resets per stage.
+  int currentIntervalDurationSeconds(TestRunState state) =>
+      state.currentPhase.durationSeconds ?? 0;
 
   // ── FTP calculation ───────────────────────────────────────────────
 
-  /// Compute the estimated FTP from the collected readings.
-  ///
-  /// The protocol picks the phase lists it needs from the map.
+  /// Computed when the FSM exits the test phase. Reads the readings the
+  /// protocol cares about (typically just the test phase's bucket).
   int calculateFtp(Map<String, List<PowerReading>> readingsByPhase);
 
   // ── UI configuration ──────────────────────────────────────────────
 
-  /// Header text for the HUD block (e.g. "Stage 3", "20 Min").
+  /// Header text for the HUD block (e.g. "Stage 3", "20 Min", "Cooldown").
   String headerText(TestRunState state);
 
-  /// Extra result rows shown in the test summary block.
-  ///
-  /// Rows like "Max Power" and "Protocol" are always shown by the screen.
-  /// This returns protocol-specific extras (e.g. "Best 1-min Avg").
+  /// Extra rows shown in the results-screen summary block.
+  /// Generic rows like "Max Power" / "Protocol" are added by the screen.
   List<ResultMetric> resultMetrics(TestRunState state);
+
+  /// Estimated number of stages in the test phase — used by the stepped
+  /// progress footer in the HUD. Single-stage protocols return 1.
+  int get totalStages;
 }

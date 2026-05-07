@@ -9,8 +9,20 @@ import '../../bluetooth/domain/trainer.dart';
 import '../domain/ftp_calculator.dart';
 import '../domain/protocol_registry.dart';
 import '../domain/ramp_test_state.dart';
+import '../domain/test_phase.dart';
 import '../domain/test_protocol_definition.dart';
 
+/// Generic FSM dispatcher for the workout session.
+///
+/// All protocol-specific policy (phase sequence, transition rules) lives
+/// in [TestProtocolDefinition]. This controller is responsible only for:
+///   - ticking the FSM clock,
+///   - driving timer-expiry and stage transitions,
+///   - applying [UserAction]s to the FSM,
+///   - managing BLE/HR subscriptions across recording boundaries,
+///   - sending ERG target power on phase entry,
+///   - computing FTP at the test → non-test boundary,
+///   - cleaning up at the terminal phase.
 class RampTestController extends Notifier<TestRunState> {
   late TestProtocolDefinition _protocol;
 
@@ -28,38 +40,126 @@ class RampTestController extends Notifier<TestRunState> {
   @override
   TestRunState build() => const TestRunState();
 
+  // ── Public API ────────────────────────────────────────────────────
+
   void start([TestProtocol protocol = TestProtocol.ramp]) {
     if (state.lifecycle != TestLifecycle.idle) return;
 
     _protocol = ProtocolRegistry.get(protocol);
 
-    state = state.copyWith(
+    state = const TestRunState().copyWith(
       lifecycle: TestLifecycle.running,
       protocol: protocol,
-      currentPhase: _protocol.warmupPhase,
-      targetPower: _protocol.warmupPower,
-      elapsedSeconds: 0,
-      warmupElapsedSeconds: 0,
+    );
+
+    _transitionTo(_protocol.initialPhase);
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
+  }
+
+  /// Apply a user-driven input to the FSM. Ignored if the protocol's
+  /// transition table doesn't define a target for the current phase.
+  void onUserAction(UserAction action) {
+    if (state.lifecycle != TestLifecycle.running) return;
+    final next = _protocol.nextPhaseOnUserAction(
+      state.currentPhase,
+      action,
+      state,
+    );
+    if (next != null) _transitionTo(next);
+  }
+
+  void adjustPower(int delta) {
+    if (!state.currentPhase.allowsManualPower) return;
+    final newPower = (state.targetPower + delta).clamp(50, 500);
+    state = state.copyWith(targetPower: newPower);
+    _sendTargetPower(newPower);
+  }
+
+  // ── FSM tick ──────────────────────────────────────────────────────
+
+  void _tick() {
+    if (state.lifecycle != TestLifecycle.running) return;
+    final phase = state.currentPhase;
+    if (phase.isPaused || phase.isTerminal) return;
+
+    final newElapsed = state.elapsedSeconds + 1;
+    final newStageElapsed = state.stageElapsedSeconds + 1;
+
+    // Stage-internal transitions (e.g. ramp's 20W-per-minute bumps).
+    final stageResult = _protocol.onStageTick(state);
+    if (stageResult != null) {
+      state = state.copyWith(
+        elapsedSeconds: newElapsed,
+        stageElapsedSeconds: 0,
+        currentStage: stageResult.newStageIndex ?? state.currentStage,
+        targetPower: stageResult.newTargetPower ?? state.targetPower,
+      );
+      if (stageResult.newTargetPower != null) {
+        _sendTargetPower(stageResult.newTargetPower!);
+      }
+      return;
+    }
+
+    // Timer-driven phase transition.
+    final dur = phase.durationSeconds;
+    if (dur != null && newStageElapsed >= dur) {
+      // Bump elapsed first so the transition shows the full phase
+      // duration in the workout clock.
+      state = state.copyWith(elapsedSeconds: newElapsed);
+      _transitionTo(_protocol.nextPhaseOnTimerExpiry(phase, state));
+      return;
+    }
+
+    state = state.copyWith(
+      elapsedSeconds: newElapsed,
+      stageElapsedSeconds: newStageElapsed,
+    );
+  }
+
+  // ── Phase transitions ─────────────────────────────────────────────
+
+  void _transitionTo(TestPhase next) {
+    final old = state.currentPhase;
+
+    // FTP at the test → non-test boundary. Idempotent: only computes
+    // the first time we leave a test phase.
+    if (old.isTestPhase && !next.isTestPhase && state.calculatedFtp == null) {
+      final ftp = _protocol.calculateFtp(state.readingsByPhase);
+      state = state.copyWith(calculatedFtp: ftp);
+    }
+
+    // Subscription lifecycle.
+    if (old.isRecording && !next.isRecording) _unsubscribeSensors();
+    if (!old.isRecording && next.isRecording) _subscribeSensors();
+
+    // Reset stage counters and seed the new phase's target power.
+    state = state.copyWith(
+      currentPhase: next,
       stageElapsedSeconds: 0,
       currentStage: 0,
-      warmupDuration: _protocol.warmupDurationSeconds,
-      readingsByPhase: {},
-      bestOneMinAvgPower: 0,
-      calculatedFtp: null,
+      targetPower: next.targetPower ?? state.targetPower,
       trainerDisconnected: false,
       dataStale: false,
     );
 
-    _sendTargetPower(_protocol.warmupPower);
+    if (next.targetPower != null) _sendTargetPower(next.targetPower!);
 
-    // Listen to HR data if connected
-    _hrSubscription = _hrRepository.hrDataStream.listen((hrData) {
+    if (next.isTerminal) {
+      _cleanup();
+      state = state.copyWith(lifecycle: TestLifecycle.completed);
+    }
+  }
+
+  // ── Subscription helpers ─────────────────────────────────────────
+
+  void _subscribeSensors() {
+    _hrSubscription ??= _hrRepository.hrDataStream.listen((hrData) {
       _latestHr = hrData.heartRate;
     });
 
-    // Listen to trainer data — append to current phase's reading list
-    _dataSubscription = _trainerRepository.trainerDataStream.listen((data) {
+    _dataSubscription ??= _trainerRepository.trainerDataStream.listen((data) {
       if (state.lifecycle != TestLifecycle.running) return;
+      if (!state.currentPhase.isRecording) return;
 
       final reading = PowerReading(
         timestamp: data.timestamp,
@@ -67,10 +167,9 @@ class RampTestController extends Notifier<TestRunState> {
         heartRate: _latestHr,
       );
 
-      // Append reading to the current phase's list
       final phaseId = state.currentPhase.id;
       final updatedPhaseList = <PowerReading>[
-        ...state.readingsByPhase[phaseId] ?? [],
+        ...state.readingsByPhase[phaseId] ?? const [],
         reading,
       ];
       final updatedMap = <String, List<PowerReading>>{
@@ -78,7 +177,7 @@ class RampTestController extends Notifier<TestRunState> {
         phaseId: updatedPhaseList,
       };
 
-      // Compute best 1-min average on test-phase readings only
+      // Best 1-min avg over all test-phase readings (for live HUD display).
       final testReadings = updatedMap.entries
           .where((e) => _isTestPhaseId(e.key))
           .expand<PowerReading>((e) => e.value)
@@ -105,112 +204,25 @@ class RampTestController extends Notifier<TestRunState> {
       );
     });
 
-    // Monitor trainer connection state — surface to UI as a warning.
-    _connectionSubscription =
+    _connectionSubscription ??=
         _trainerRepository.connectionStateStream.listen((connState) {
       if (state.lifecycle != TestLifecycle.running) return;
-
-      final disconnected =
-          connState == TrainerConnectionState.disconnected;
+      final disconnected = connState == TrainerConnectionState.disconnected;
       if (state.trainerDisconnected != disconnected) {
         state = state.copyWith(trainerDisconnected: disconnected);
       }
     });
 
-    // Monitor data staleness
-    _dataStaleSubscription =
+    _dataStaleSubscription ??=
         _trainerRepository.dataStaleStream.listen((isStale) {
       if (state.lifecycle != TestLifecycle.running) return;
       if (state.dataStale != isStale) {
         state = state.copyWith(dataStale: isStale);
       }
     });
-
-    // Tick every second
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
   }
 
-  /// Check if a phase ID corresponds to a test phase in the current protocol.
-  bool _isTestPhaseId(String phaseId) {
-    if (phaseId == _protocol.initialTestPhase.id) return true;
-    // Warmup is never a test phase
-    return false;
-  }
-
-  void _tick() {
-    if (state.lifecycle != TestLifecycle.running) return;
-
-    final newElapsed = state.elapsedSeconds + 1;
-
-    // ── Warmup (generic for all protocols) ──
-    if (state.currentPhase.isWarmup) {
-      final newWarmup = state.warmupElapsedSeconds + 1;
-      if (newWarmup >= _protocol.warmupDurationSeconds) {
-        // Transition to the protocol's initial test phase
-        final targetPower = _protocol.initialTestPower;
-        _sendTargetPower(targetPower);
-        state = state.copyWith(
-          elapsedSeconds: newElapsed,
-          warmupElapsedSeconds: newWarmup,
-          currentPhase: _protocol.initialTestPhase,
-          stageElapsedSeconds: 0,
-          currentStage: 0,
-          targetPower: targetPower,
-        );
-      } else {
-        state = state.copyWith(
-          elapsedSeconds: newElapsed,
-          warmupElapsedSeconds: newWarmup,
-        );
-      }
-      return;
-    }
-
-    // ── Test phase (delegated to protocol) ──
-    final result = _protocol.onTick(state);
-
-    if (result.shouldComplete) {
-      stop();
-      return;
-    }
-
-    state = state.applyTickResult(result, newElapsed);
-
-    if (result.newTargetPower != null) {
-      _sendTargetPower(result.newTargetPower!);
-    }
-  }
-
-  void adjustPower(int delta) {
-    if (!state.currentPhase.allowsManualPower) return;
-    final newPower = (state.targetPower + delta).clamp(50, 500);
-    state = state.copyWith(targetPower: newPower);
-    _sendTargetPower(newPower);
-  }
-
-  /// Skip the current phase if it is marked skippable.
-  ///
-  /// Today this advances from the warmup phase straight into the protocol's
-  /// initial test phase. The controller stays generic — any phase marked
-  /// [TestPhase.isSkippable] can wire up its own advance logic here later.
-  void skipPhase() {
-    if (!state.currentPhase.isSkippable) return;
-
-    if (state.currentPhase.isWarmup) {
-      final targetPower = _protocol.initialTestPower;
-      _sendTargetPower(targetPower);
-      state = state.copyWith(
-        currentPhase: _protocol.initialTestPhase,
-        stageElapsedSeconds: 0,
-        currentStage: 0,
-        targetPower: targetPower,
-      );
-    }
-  }
-
-  void stop() {
-    _timer?.cancel();
-    _timer = null;
+  void _unsubscribeSensors() {
     _dataSubscription?.cancel();
     _dataSubscription = null;
     _hrSubscription?.cancel();
@@ -219,18 +231,28 @@ class RampTestController extends Notifier<TestRunState> {
     _connectionSubscription = null;
     _dataStaleSubscription?.cancel();
     _dataStaleSubscription = null;
-
-    final ftp = _protocol.calculateFtp(state.readingsByPhase);
-
-    state = state.copyWith(
-      lifecycle: TestLifecycle.completed,
-      calculatedFtp: ftp,
-      trainerDisconnected: false,
-      dataStale: false,
-    );
   }
 
-  /// Send a target power command to the trainer, handling failures.
+  void _cleanup() {
+    _timer?.cancel();
+    _timer = null;
+    _unsubscribeSensors();
+  }
+
+  bool _isTestPhaseId(String phaseId) {
+    // The protocol's initial *test* phase is identified via the
+    // [TestPhase.isTestPhase] flag, but we don't have a direct lookup
+    // by id on the protocol. The state's currentPhase is the safest
+    // source of truth — but here we need to evaluate arbitrary phase
+    // ids. Cheat: check whether the id matches the current phase if
+    // it's a test phase, OR fall back to the protocol's known test
+    // phase ids. For both protocols those are 'ramping' / 'sustained'.
+    if (state.currentPhase.id == phaseId && state.currentPhase.isTestPhase) {
+      return true;
+    }
+    return phaseId == 'ramping' || phaseId == 'sustained';
+  }
+
   void _sendTargetPower(int watts) {
     _trainerRepository.setTargetPower(watts).then((success) {
       if (!success && state.lifecycle == TestLifecycle.running) {

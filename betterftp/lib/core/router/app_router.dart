@@ -2,8 +2,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/bluetooth/presentation/device_scan_screen.dart';
 import '../../features/ramp_test/domain/ramp_test_state.dart';
-import '../../features/ramp_test/presentation/ramp_test_screen.dart';
 import '../../features/ramp_test/presentation/test_instructions_screen.dart';
+import '../../features/ramp_test/presentation/workout_screen.dart';
 import '../../features/results/presentation/results_screen.dart';
 
 TestProtocol _parseProtocol(Object? extra) {
@@ -30,20 +30,17 @@ final appRouter = GoRouter(
       },
     ),
     GoRoute(
-      path: '/ramp-test',
+      path: '/workout',
       builder: (context, state) {
         final map = state.extra as Map<String, dynamic>? ?? {};
         final autoStart = map['autoStart'] as bool? ?? false;
         final protocol = _parseProtocol(state.extra);
-        return RampTestScreen(autoStart: autoStart, protocol: protocol);
+        return WorkoutScreen(autoStart: autoStart, protocol: protocol);
       },
     ),
     GoRoute(
       path: '/results',
-      builder: (context, state) {
-        final testState = state.extra as TestRunState;
-        return ResultsScreen(testState: testState);
-      },
+      builder: (context, state) => const ResultsScreen(),
     ),
   ],
 );

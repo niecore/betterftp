@@ -12,7 +12,12 @@ enum TestProtocol {
   const TestProtocol(this.label);
 }
 
-/// High-level lifecycle of the test session.
+/// High-level lifecycle of the workout session.
+///
+/// `running` covers the entire FSM run from warmup through cooldown until
+/// the FSM enters its terminal phase, at which point the lifecycle becomes
+/// `completed`. Phase identity (warmup vs. test vs. cooldown vs. results)
+/// is tracked separately on [TestRunState.currentPhase].
 enum TestLifecycle { idle, running, completed, failed }
 
 /// A single power data point from the trainer.
@@ -32,7 +37,7 @@ class PowerReading {
 /// Sentinel phase used as the default before a protocol is selected.
 const _idlePhase = TestPhase(id: 'idle', displayName: 'Idle');
 
-/// Immutable state for the test session.
+/// Immutable state for the workout session.
 @immutable
 class TestRunState {
   // ── Lifecycle ─────────────────────────────────────────────────────
@@ -40,17 +45,21 @@ class TestRunState {
   final TestProtocol protocol;
   final TestPhase currentPhase;
 
-  // ── Universal counters ────────────────────────────────────────────
+  // ── Counters ──────────────────────────────────────────────────────
+
+  /// Total elapsed seconds across all phases since [RampTestController.start].
   final int elapsedSeconds;
-  final int warmupElapsedSeconds;
+
+  /// Seconds elapsed within the current phase (or current stage inside
+  /// a stepped phase like ramping). Reset to 0 on any phase change.
   final int stageElapsedSeconds;
+
+  /// Stage index inside the current phase (used by ramping for the
+  /// 20W-per-minute step counter). Reset to 0 on any phase change.
   final int currentStage;
 
-  // ── Config (copied from protocol at start) ────────────────────────
-  final int warmupDuration;
+  // ── ERG / sensor data ────────────────────────────────────────────
   final int targetPower;
-
-  // ── Sensor data ───────────────────────────────────────────────────
   final int currentPower;
   final int currentCadence;
   final int? currentHeartRate;
@@ -71,10 +80,8 @@ class TestRunState {
     this.protocol = TestProtocol.ramp,
     this.currentPhase = _idlePhase,
     this.elapsedSeconds = 0,
-    this.warmupElapsedSeconds = 0,
     this.stageElapsedSeconds = 0,
     this.currentStage = 0,
-    this.warmupDuration = 300,
     this.targetPower = 0,
     this.currentPower = 0,
     this.currentCadence = 0,
@@ -117,10 +124,8 @@ class TestRunState {
     TestProtocol? protocol,
     TestPhase? currentPhase,
     int? elapsedSeconds,
-    int? warmupElapsedSeconds,
     int? stageElapsedSeconds,
     int? currentStage,
-    int? warmupDuration,
     int? targetPower,
     int? currentPower,
     int? currentCadence,
@@ -137,10 +142,8 @@ class TestRunState {
       protocol: protocol ?? this.protocol,
       currentPhase: currentPhase ?? this.currentPhase,
       elapsedSeconds: elapsedSeconds ?? this.elapsedSeconds,
-      warmupElapsedSeconds: warmupElapsedSeconds ?? this.warmupElapsedSeconds,
       stageElapsedSeconds: stageElapsedSeconds ?? this.stageElapsedSeconds,
       currentStage: currentStage ?? this.currentStage,
-      warmupDuration: warmupDuration ?? this.warmupDuration,
       targetPower: targetPower ?? this.targetPower,
       currentPower: currentPower ?? this.currentPower,
       currentCadence: currentCadence ?? this.currentCadence,
@@ -151,18 +154,6 @@ class TestRunState {
       readingsByPhase: readingsByPhase ?? this.readingsByPhase,
       bestOneMinAvgPower: bestOneMinAvgPower ?? this.bestOneMinAvgPower,
       calculatedFtp: calculatedFtp ?? this.calculatedFtp,
-    );
-  }
-
-  /// Apply a [TestTickResult] from the protocol's onTick.
-  TestRunState applyTickResult(TestTickResult result, int newElapsed) {
-    return copyWith(
-      elapsedSeconds: newElapsed,
-      currentPhase: result.newPhase ?? currentPhase,
-      targetPower: result.newTargetPower ?? targetPower,
-      currentStage: result.newStageIndex ?? currentStage,
-      stageElapsedSeconds:
-          result.newStageIndex != null ? 0 : stageElapsedSeconds + 1,
     );
   }
 }
