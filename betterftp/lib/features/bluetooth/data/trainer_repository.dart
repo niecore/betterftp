@@ -86,6 +86,24 @@ class TrainerRepository {
   }
 
   Future<bool> _connectToDevice(BluetoothDevice device, String name) async {
+    // Tear down any existing connection first — otherwise the previous
+    // device's notification subscription keeps firing into the same data
+    // stream and consumers see frames from both trainers interleaved.
+    if (_connectedDevice != null || _bikeDataSubscription != null) {
+      final old = _connectedDevice;
+      _cleanup();
+      _connectedDevice = null;
+      _connectedDeviceName = null;
+      if (old != null) {
+        try {
+          await old.disconnect();
+        } catch (e) {
+          developer.log('Pre-connect teardown disconnect error: $e',
+              name: 'TrainerRepository');
+        }
+      }
+    }
+
     try {
       _updateConnectionState(TrainerConnectionState.connecting);
 
