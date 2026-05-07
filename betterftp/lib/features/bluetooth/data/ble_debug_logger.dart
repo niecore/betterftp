@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:ui';
 
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -68,7 +69,11 @@ class BleDebugLogger {
   }
 
   /// Write the report to a temp `.log` file and open the native share sheet.
-  Future<void> shareLog() async {
+  ///
+  /// On iPad the share sheet presents as a popover and requires
+  /// [sharePositionOrigin] as the anchor rect — omitting it throws a
+  /// PlatformException("Share position must be set"). iPhone/Android ignore it.
+  Future<void> shareLog({Rect? sharePositionOrigin}) async {
     final report = formatReport();
     final tempDir = await getTemporaryDirectory();
     final timestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
@@ -79,6 +84,7 @@ class BleDebugLogger {
     await SharePlus.instance.share(
       ShareParams(
         files: [XFile(filePath, mimeType: 'text/plain')],
+        sharePositionOrigin: sharePositionOrigin,
       ),
     );
   }

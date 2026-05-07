@@ -28,6 +28,7 @@ class ResultsScreen extends ConsumerStatefulWidget {
 
 class _ResultsScreenState extends ConsumerState<ResultsScreen> {
   bool _isExporting = false;
+  final GlobalKey _saveFitButtonKey = GlobalKey();
 
   String _formatTime(int totalSeconds) {
     final minutes = totalSeconds ~/ 60;
@@ -65,7 +66,13 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
   Future<void> _shareFitFile(TestRunState state) async {
     setState(() => _isExporting = true);
     try {
-      await FitShareService().shareTestResult(state);
+      // iPad popover requires an anchor rect; iPhone/Android ignore it.
+      final box =
+          _saveFitButtonKey.currentContext?.findRenderObject() as RenderBox?;
+      final origin =
+          box != null ? box.localToGlobal(Offset.zero) & box.size : null;
+      await FitShareService()
+          .shareTestResult(state, sharePositionOrigin: origin);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -341,6 +348,7 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
               // Buttons pinned at bottom
               const SizedBox(height: 10),
               AppButton(
+                key: _saveFitButtonKey,
                 label: _isExporting ? 'Saving...' : 'Save .FIT',
                 variant: AppButtonVariant.teal,
                 onPressed: _isExporting ? null : () => _shareFitFile(state),

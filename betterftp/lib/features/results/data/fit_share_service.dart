@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -15,7 +16,14 @@ class FitShareService {
 
   /// Encodes the test state, writes to Documents/fit/, and opens the share sheet.
   /// Files persist and are visible in the iOS Files app.
-  Future<void> shareTestResult(TestRunState state) async {
+  ///
+  /// On iPad the share sheet presents as a popover and requires
+  /// [sharePositionOrigin] as the anchor rect — omitting it throws a
+  /// PlatformException("Share position must be set"). iPhone/Android ignore it.
+  Future<void> shareTestResult(
+    TestRunState state, {
+    Rect? sharePositionOrigin,
+  }) async {
     final bytes = _exportService.encode(state);
 
     final docs = await getApplicationDocumentsDirectory();
@@ -29,6 +37,7 @@ class FitShareService {
     await SharePlus.instance.share(
       ShareParams(
         files: [XFile(filePath, mimeType: 'application/vnd.ant.fit')],
+        sharePositionOrigin: sharePositionOrigin,
       ),
     );
   }

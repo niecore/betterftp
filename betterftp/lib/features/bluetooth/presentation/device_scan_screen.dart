@@ -48,6 +48,7 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen>
   int _logoTapCount = 0;
   Timer? _logoTapResetTimer;
   bool _isSharingLog = false;
+  final GlobalKey _logoBadgeKey = GlobalKey();
   @override
   void initState() {
     super.initState();
@@ -267,7 +268,14 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen>
     if (_isSharingLog) return;
     setState(() => _isSharingLog = true);
     try {
-      await ref.read(bleDebugLoggerProvider).shareLog();
+      // iPad popover requires an anchor rect; iPhone/Android ignore it.
+      final box =
+          _logoBadgeKey.currentContext?.findRenderObject() as RenderBox?;
+      final origin =
+          box != null ? box.localToGlobal(Offset.zero) & box.size : null;
+      await ref
+          .read(bleDebugLoggerProvider)
+          .shareLog(sharePositionOrigin: origin);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -580,6 +588,7 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen>
             onTap: _onLogoTap,
             behavior: HitTestBehavior.opaque,
             child: Container(
+              key: _logoBadgeKey,
               width: m.badgeSize,
               height: m.badgeSize,
               decoration: BoxDecoration(
