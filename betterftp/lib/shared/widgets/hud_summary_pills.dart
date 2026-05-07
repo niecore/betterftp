@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
 
-/// Summary pills row: Time, Avg W, Avg HR, Max HR, Eff.
+/// Summary pills row: Time, Avg W, Avg HR, Max HR.
 /// Natural sizing, space-evenly, wrap to new rows.
 class HudSummaryPills extends StatelessWidget {
   final String elapsed;
   final String avgPower;
   final String avgHr;
   final String maxHr;
-  final String efficiency;
 
   const HudSummaryPills({
     super.key,
@@ -17,7 +16,6 @@ class HudSummaryPills extends StatelessWidget {
     required this.avgPower,
     required this.avgHr,
     required this.maxHr,
-    required this.efficiency,
   });
 
   @override
@@ -31,7 +29,6 @@ class HudSummaryPills extends StatelessWidget {
         _Pill(label: 'Avg W', value: avgPower),
         _Pill(label: 'Avg HR', value: avgHr),
         _Pill(label: 'Max HR', value: maxHr),
-        _Pill(label: 'Eff', value: efficiency),
       ],
     );
   }

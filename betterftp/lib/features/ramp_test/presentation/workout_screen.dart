@@ -83,14 +83,6 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
     return (sum / all.length).round();
   }
 
-  /// Compute efficiency: avg power / target power as percentage.
-  String _efficiency(TestRunState state) {
-    if (state.targetPower <= 0) return '--';
-    final avg = _avgPower(state);
-    final eff = ((avg / state.targetPower) * 100).round();
-    return '$eff%';
-  }
-
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(rampTestControllerProvider);
@@ -290,7 +282,6 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                   avgPower: '$avgPower',
                   avgHr: avgHr != null ? '$avgHr' : '--',
                   maxHr: maxHr != null ? '$maxHr' : '--',
-                  efficiency: _efficiency(state),
                 ),
 
               // ── Idle state: prompt ──
