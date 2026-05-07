@@ -34,6 +34,10 @@
 	<string>This app needs Bluetooth to connect to your cycling trainer.</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
 	<string>This app needs Bluetooth to connect to your cycling trainer.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>bluetooth-central</string>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
