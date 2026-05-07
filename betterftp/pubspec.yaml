@@ -32,12 +32,14 @@ dev_dependencies:
   patrol: ^4.5.0
   device_preview: ^1.2.0
   device_preview_screenshot: ^1.0.0
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true
 
   assets:
     - assets/animations/
+    - assets/icon/
 
   fonts:
     - family: Iosevka
@@ -50,6 +52,15 @@ flutter:
           weight: 700
         - asset: assets/fonts/Iosevka-Heavy.ttf
           weight: 900
+
+flutter_launcher_icons:
+  android: "ic_launcher"
+  ios: false
+  image_path: "assets/icon/app_icon_foreground.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/icon/app_icon_foreground.png"
+  adaptive_icon_foreground_inset: 16
+  remove_alpha_ios: false
 
 patrol:
   app_name: BETTER.FTP
