@@ -83,6 +83,78 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
     return (sum / all.length).round();
   }
 
+  void _confirmFinishTest(RampTestController controller) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.bg,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.screenSide,
+          AppSpacing.xxl,
+          AppSpacing.screenSide,
+          40,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'FINISH TEST?',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.dark,
+                    letterSpacing: 1,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => Navigator.pop(ctx),
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: AppColors.card,
+                      border: Border.all(color: AppColors.dark, width: 2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    alignment: Alignment.center,
+                    child: const Text(
+                      '✕',
+                      style: TextStyle(fontSize: 16, color: AppColors.dark),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.xl),
+            AppButton(
+              label: 'I am done.',
+              variant: AppButtonVariant.pink,
+              prefixIcon: '■',
+              onPressed: () {
+                Navigator.pop(ctx);
+                controller.onUserAction(UserAction.endEffort);
+              },
+            ),
+            const SizedBox(height: 10),
+            AppButton(
+              label: 'Keep Going',
+              variant: AppButtonVariant.outline,
+              onPressed: () => Navigator.pop(ctx),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(rampTestControllerProvider);
@@ -343,11 +415,13 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                       ? AppButtonVariant.primary
                       : AppButtonVariant.pink,
                   prefixIcon: isWarmup ? '\u25B6' : '\u25A0',
-                  onPressed: () => controller.onUserAction(
-                    isWarmup ? UserAction.skip
-                        : isCooldown ? UserAction.skip
-                            : UserAction.endEffort,
-                  ),
+                  onPressed: () {
+                    if (isWarmup || isCooldown) {
+                      controller.onUserAction(UserAction.skip);
+                    } else {
+                      _confirmFinishTest(controller);
+                    }
+                  },
                 ),
               ],
             ],
