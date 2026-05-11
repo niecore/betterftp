@@ -354,6 +354,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                   avgPower: '$avgPower',
                   avgHr: avgHr != null ? '$avgHr' : '--',
                   maxHr: maxHr != null ? '$maxHr' : '--',
+                  compact: isCompact,
                 ),
 
               // ── Idle state: prompt ──
