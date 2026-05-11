@@ -6,7 +6,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:video_player/video_player.dart';
 
 import '../../../core/constants/ble_constants.dart';
 import '../../../core/constants/ftms_constants.dart';
@@ -41,7 +40,6 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen>
   static const Duration _logoTapResetWindow = Duration(seconds: 3);
 
   String _selectedMode = 'Ramp Test';
-  late final VideoPlayerController _hamsterController;
   late final AnimationController _shakeController;
   late final Animation<double> _shakeAnimation;
 
@@ -52,17 +50,6 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen>
   @override
   void initState() {
     super.initState();
-    _hamsterController =
-        VideoPlayerController.asset('assets/animations/hamster.mp4')
-          ..setLooping(true)
-          ..setVolume(0)
-          ..initialize().then((_) {
-            if (mounted) {
-              setState(() {});
-              _hamsterController.play();
-            }
-          });
-
     _shakeController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 400),
@@ -122,7 +109,6 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen>
 
   @override
   void dispose() {
-    _hamsterController.dispose();
     _shakeController.dispose();
     _logoTapResetTimer?.cancel();
     super.dispose();
@@ -610,22 +596,23 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen>
                     left: m.badgeSize * 0.16,
                     right: m.badgeSize * 0.16,
                   ),
-                  child: _hamsterController.value.isInitialized
-                      ? ColorFiltered(
-                          colorFilter: const ColorFilter.mode(
-                            AppColors.bg,
-                            BlendMode.multiply,
-                          ),
-                          child: FittedBox(
-                            fit: BoxFit.cover,
-                            child: SizedBox(
-                              width: _hamsterController.value.size.width,
-                              height: _hamsterController.value.size.height,
-                              child: VideoPlayer(_hamsterController),
-                            ),
-                          ),
-                        )
-                      : const SizedBox.shrink(),
+                  child: ColorFiltered(
+                    colorFilter: const ColorFilter.mode(
+                      AppColors.bg,
+                      BlendMode.multiply,
+                    ),
+                    child: FittedBox(
+                      fit: BoxFit.cover,
+                      child: SizedBox(
+                        width: 720,
+                        height: 720,
+                        child: Image.asset(
+                          'assets/animations/hamster.webp',
+                          gaplessPlayback: true,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
