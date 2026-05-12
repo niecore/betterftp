@@ -162,7 +162,6 @@ class RampProtocol extends TestProtocolDefinition {
   List<ResultMetric> resultMetrics(TestRunState state) {
     return [
       ResultMetric('Best 1-min Avg', '${state.bestOneMinAvgPower.round()} W'),
-      ResultMetric('Stages Completed', '${state.currentStage + 1}'),
     ];
   }
 
