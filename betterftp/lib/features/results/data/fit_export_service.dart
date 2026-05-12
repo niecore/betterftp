@@ -13,6 +13,18 @@ class FitExportService {
   static int _toFitTimestamp(DateTime dt) =>
       (dt.millisecondsSinceEpoch ~/ 1000) - _fitEpochOffset;
 
+  /// Canonical activity name used both as the FIT `workout.wkt_name`
+  /// (read by intervals.icu and Garmin Connect) and as the on-disk
+  /// filename (read by Strava on upload).
+  static String activityNameFor(TestRunState state) {
+    final protocol = state.protocol.label;
+    final ftp = state.calculatedFtp;
+    if (ftp == null) {
+      return '$protocol Test - betterftp.cc';
+    }
+    return '$protocol Test - ${ftp}W FTP - betterftp.cc';
+  }
+
   /// Encodes the test state into a valid FIT activity file.
   ///
   /// All readings (including warmup) are written as Record messages so the
@@ -37,6 +49,9 @@ class FitExportService {
     // --- FileId (must be first) ---
     _writeFileId(encoder, fitStart);
 
+    // --- Workout name (read as activity title by intervals.icu, Garmin) ---
+    _writeWorkout(encoder, activityNameFor(state));
+
     // --- Record messages (one per PowerReading, all phases) ---
     _writeRecords(encoder, allReadings);
 
@@ -59,6 +74,17 @@ class FitExportService {
     mesg.setFieldValue(2, 0); // product
     mesg.setFieldValue(3, 12345); // serial_number
     mesg.setFieldValue(4, fitTimestamp); // time_created
+
+    final def = MesgDefinition.fromMesg(mesg);
+    encoder.writeMesgDefinition(def);
+    encoder.writeMesg(mesg);
+  }
+
+  void _writeWorkout(Encode encoder, String name) {
+    final mesg = Mesg.fromMesgNum(MesgNum.workout);
+    mesg.setFieldValue(4, 2); // sport = cycling
+    mesg.setFieldValue(11, 6); // sub_sport = indoor_cycling
+    mesg.setFieldValue(8, name); // wkt_name
 
     final def = MesgDefinition.fromMesg(mesg);
     encoder.writeMesgDefinition(def);
