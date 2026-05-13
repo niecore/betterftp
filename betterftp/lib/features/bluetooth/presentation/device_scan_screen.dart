@@ -15,6 +15,7 @@ import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/icon_box.dart';
 import '../../../shared/widgets/page_max_width.dart';
 import '../../../shared/widgets/tag_widget.dart';
+import '../../../shared/widgets/version_label.dart';
 import '../data/ble_debug_logger.dart';
 import '../data/ble_scanner_service.dart';
 import '../data/device_storage_service.dart';
@@ -498,6 +499,8 @@ class _DeviceScanScreenState extends ConsumerState<DeviceScanScreen>
                         })
                     : () => _shakePairingBlock(),
               ),
+              const SizedBox(height: 8),
+              const Center(child: VersionLabel()),
             ],
           ),
           ),
