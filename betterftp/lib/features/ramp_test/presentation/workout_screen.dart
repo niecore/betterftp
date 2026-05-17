@@ -408,9 +408,9 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
                 //   cooldown → Finish Cooldown  (skip → results)
                 AppButton(
                   label: isWarmup
-                      ? 'Start Test'
+                      ? 'Skip warmup'
                       : isCooldown
-                          ? 'Finish Cooldown'
+                          ? 'Skip Cooldown'
                           : 'Finish Test',
                   variant: isWarmup
                       ? AppButtonVariant.primary
