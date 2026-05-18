@@ -8,7 +8,7 @@
 
 Connect your smart trainer, pick a protocol, ride until you can't. That's it. No account needed, no subscriptions, no data harvesting. Just you, your legs, and a number.
 
-**[betterftp.cc](https://betterftp.cc)** · [Android APK (beta)](https://github.com/niecore/betterftp/releases/latest/download/app-release.apk)
+**[betterftp.cc](https://betterftp.cc)** · [Download on the App Store](https://apps.apple.com/de/app/better-ftp/id6766080601) · [Android APK (beta)](https://github.com/niecore/betterftp/releases/latest/download/app-release.apk)
 
 </div>
 
@@ -47,7 +47,7 @@ Save the workout as a `.fit` file and send it wherever you like — email it to 
 
 | Platform | Link |
 |---|---|
-| iOS | Coming to the App Store |
+| iOS | [Download on the App Store](https://apps.apple.com/de/app/better-ftp/id6766080601) |
 | Android | [Download APK (beta)](https://github.com/niecore/betterftp/releases/latest/download/app-release.apk) |
 
 ---
